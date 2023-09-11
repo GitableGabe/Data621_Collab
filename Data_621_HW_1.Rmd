@@ -82,6 +82,7 @@ For the multiple linear regression model, will you use a metric such as Adjusted
 
 ```{r, echo=FALSE}
 library(skimr)
+library(dplyr)
 ```
 
 
@@ -89,16 +90,39 @@ library(skimr)
 **Load the data**
 
 ```{r}
-data_train <- read.csv("https://raw.githubusercontent.com/melbow2424/Data621_HW1/main/moneyball-training-data.csv")
+df_train <- read.csv("https://raw.githubusercontent.com/melbow2424/Data621_HW1/main/moneyball-training-data.csv")
 
-data_evaluation <- read.csv("https://raw.githubusercontent.com/melbow2424/Data621_HW1/main/moneyball-evaluation-data.csv")
+df_evaluation <- read.csv("https://raw.githubusercontent.com/melbow2424/Data621_HW1/main/moneyball-evaluation-data.csv")
 ```
 
 **Review**
 
 ```{r}
-skim(data_train)
+skim(df_train)
 ```
+
+```{r}
+mn_TEAM_BATTING_SO<- mean(df_train$TEAM_BATTLING_SO, na.rm = TRUE)
+md_TEAM_BATTING_SO<- median(df_train$TEAM_BATTLING_SO, na.rm = TRUE)
+
+mn_TEAM_BASERUN_SB<- mean(df_train$TEAM_BASERUN_SB, na.rm = TRUE)
+md_TEAM_BASERUN_SB<- median(df_train$TEAM_BASERUN_SB, na.rm = TRUE)
+
+mn_TEAM_BASERUN_CS<- mean(df_train$TEAM_BASERUN_CS, na.rm = TRUE)
+md_TEAM_BASERUN_CS<- median(df_train$TEAM_BASERUN_CS, na.rm = TRUE)
+
+mn_TEAM_BATTING_HBP<- mean(df_train$TEAM_BASERUN_HBP, na.rm = TRUE)
+md_TEAM_BATTING_HBP<- median(df_train$TEAM_BASERUN_HBP, na.rm = TRUE)
+
+mn_TEAM_PITCHING_SO<- mean(df_train$TEAM_BASERUN_SO, na.rm = TRUE)
+md_TEAM_PITCHING_SO<- median(df_train$TEAM_BASERUN_SO, na.rm = TRUE)
+
+mn_TEAM_FIELDING_DP<- mean(df_train$TEAM_BASERUN_DP, na.rm = TRUE)
+md_TEAM_FIELDING_DP<- median(df_train$TEAM_BASERUN_DP, na.rm = TRUE)
+```
+
+
+
 
 ### Reference
 
