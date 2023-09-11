@@ -102,27 +102,62 @@ skim(df_train)
 ```
 
 ```{r}
-mn_TEAM_BATTING_SO<- mean(df_train$TEAM_BATTLING_SO, na.rm = TRUE)
-md_TEAM_BATTING_SO<- median(df_train$TEAM_BATTLING_SO, na.rm = TRUE)
+train_means<-sapply(df_train, function(x) round(mean(x, na.rm = TRUE)))
+train_means
+```
 
-mn_TEAM_BASERUN_SB<- mean(df_train$TEAM_BASERUN_SB, na.rm = TRUE)
-md_TEAM_BASERUN_SB<- median(df_train$TEAM_BASERUN_SB, na.rm = TRUE)
-
-mn_TEAM_BASERUN_CS<- mean(df_train$TEAM_BASERUN_CS, na.rm = TRUE)
-md_TEAM_BASERUN_CS<- median(df_train$TEAM_BASERUN_CS, na.rm = TRUE)
-
-mn_TEAM_BATTING_HBP<- mean(df_train$TEAM_BASERUN_HBP, na.rm = TRUE)
-md_TEAM_BATTING_HBP<- median(df_train$TEAM_BASERUN_HBP, na.rm = TRUE)
-
-mn_TEAM_PITCHING_SO<- mean(df_train$TEAM_BASERUN_SO, na.rm = TRUE)
-md_TEAM_PITCHING_SO<- median(df_train$TEAM_BASERUN_SO, na.rm = TRUE)
-
-mn_TEAM_FIELDING_DP<- mean(df_train$TEAM_BASERUN_DP, na.rm = TRUE)
-md_TEAM_FIELDING_DP<- median(df_train$TEAM_BASERUN_DP, na.rm = TRUE)
+```{r}
+train_medians<-sapply(df_train, function(x) round(median(x, na.rm = TRUE)))
+train_medians
 ```
 
 
 
+```{r}
+# Replace NA values in 'column_name' with 'means'
+df_train <- df_train %>%
+  mutate(TEAM_BATTING_SO =
+           ifelse(is.na(TEAM_BATTING_SO),
+                  train_means[8],TEAM_BATTING_SO))%>% 
+  mutate(TEAM_BASERUN_SB = 
+           ifelse(is.na(TEAM_BASERUN_SB),
+                  train_means[9], TEAM_BASERUN_SB))%>%
+  mutate(TEAM_BASERUN_CS =
+           ifelse(is.na(TEAM_BASERUN_CS),
+                  train_means[10], TEAM_BASERUN_CS))%>%
+  mutate(TEAM_BATTING_HBP = 
+           ifelse(is.na(TEAM_BATTING_HBP),
+                  train_means[11],TEAM_BATTING_HBP))%>%
+  mutate(TEAM_PITCHING_SO =
+           ifelse(is.na(TEAM_PITCHING_SO),
+                  train_means[15], TEAM_PITCHING_SO))%>%
+  mutate(TEAM_FIELDING_DP =
+           ifelse(is.na(TEAM_FIELDING_DP),
+                  train_means[17], TEAM_FIELDING_DP))
+```
+
+```{r}
+# Replace NA values in 'column_name' with 'median'
+# df_train <- df_train %>%
+#   mutate(TEAM_BATTING_SO =
+#            ifelse(is.na(TEAM_BATTING_SO),
+#                   train_medians[8],TEAM_BATTING_SO))%>% 
+#   mutate(TEAM_BASERUN_SB = 
+#            ifelse(is.na(TEAM_BASERUN_SB),
+#                   train_medians[9], TEAM_BASERUN_SB))%>%
+#   mutate(TEAM_BASERUN_CS =
+#            ifelse(is.na(TEAM_BASERUN_CS),
+#                   train_medians[10], TEAM_BASERUN_CS))%>%
+#   mutate(TEAM_BATTING_HBP = 
+#            ifelse(is.na(TEAM_BATTING_HBP),
+#                   train_medians[11],TEAM_BATTING_HBP))%>%
+#   mutate(TEAM_PITCHING_SO =
+#            ifelse(is.na(TEAM_PITCHING_SO),
+#                   train_medians[15], TEAM_PITCHING_SO))%>%
+#   mutate(TEAM_FIELDING_DP =
+#            ifelse(is.na(TEAM_FIELDING_DP),
+#                   train_medians[17], TEAM_FIELDING_DP))
+```
 
 ### Reference
 
