@@ -1819,17 +1819,17 @@ evaluation data set.</li>
 <div id="evaluation" class="section level3">
 <h3>Evaluation</h3>
 <p><strong>Load the data</strong></p>
-<pre class="r"><code>data_train &lt;- read.csv(&quot;https://raw.githubusercontent.com/melbow2424/Data621_HW1/main/moneyball-training-data.csv&quot;)
+<pre class="r"><code>df_train &lt;- read.csv(&quot;https://raw.githubusercontent.com/melbow2424/Data621_HW1/main/moneyball-training-data.csv&quot;)
 
-data_evaluation &lt;- read.csv(&quot;https://raw.githubusercontent.com/melbow2424/Data621_HW1/main/moneyball-evaluation-data.csv&quot;)</code></pre>
-<p><strong>Review</strong></p>
-<pre class="r"><code>skim(data_train)</code></pre>
+df_evaluation &lt;- read.csv(&quot;https://raw.githubusercontent.com/melbow2424/Data621_HW1/main/moneyball-evaluation-data.csv&quot;)</code></pre>
+<p><strong>Review Data</strong></p>
+<pre class="r"><code>skim(df_train)</code></pre>
 <table>
 <caption>Data summary</caption>
 <tbody>
 <tr class="odd">
 <td align="left">Name</td>
-<td align="left">data_train</td>
+<td align="left">df_train</td>
 </tr>
 <tr class="even">
 <td align="left">Number of rows</td>
@@ -2115,6 +2115,79 @@ data_evaluation &lt;- read.csv(&quot;https://raw.githubusercontent.com/melbow242
 </tr>
 </tbody>
 </table>
+<p><strong>Get the Means of columns in Training Data</strong></p>
+<pre class="r"><code>train_means&lt;-sapply(df_train, function(x) round(mean(x, na.rm = TRUE)))
+train_means</code></pre>
+<pre><code>##            INDEX      TARGET_WINS   TEAM_BATTING_H  TEAM_BATTING_2B 
+##             1268               81             1469              241 
+##  TEAM_BATTING_3B  TEAM_BATTING_HR  TEAM_BATTING_BB  TEAM_BATTING_SO 
+##               55              100              502              736 
+##  TEAM_BASERUN_SB  TEAM_BASERUN_CS TEAM_BATTING_HBP  TEAM_PITCHING_H 
+##              125               53               59             1779 
+## TEAM_PITCHING_HR TEAM_PITCHING_BB TEAM_PITCHING_SO  TEAM_FIELDING_E 
+##              106              553              818              246 
+## TEAM_FIELDING_DP 
+##              146</code></pre>
+<p><strong>Get the Medians of columns in training data</strong></p>
+<pre class="r"><code>train_medians&lt;-sapply(df_train, function(x) round(median(x, na.rm = TRUE)))
+train_medians</code></pre>
+<pre><code>##            INDEX      TARGET_WINS   TEAM_BATTING_H  TEAM_BATTING_2B 
+##             1270               82             1454              238 
+##  TEAM_BATTING_3B  TEAM_BATTING_HR  TEAM_BATTING_BB  TEAM_BATTING_SO 
+##               47              102              512              750 
+##  TEAM_BASERUN_SB  TEAM_BASERUN_CS TEAM_BATTING_HBP  TEAM_PITCHING_H 
+##              101               49               58             1518 
+## TEAM_PITCHING_HR TEAM_PITCHING_BB TEAM_PITCHING_SO  TEAM_FIELDING_E 
+##              107              536              814              159 
+## TEAM_FIELDING_DP 
+##              149</code></pre>
+<p><strong>Replace null values in columns with their respective
+Mean</strong></p>
+<pre class="r"><code># Replace NA values in &#39;column_name&#39; with &#39;means&#39;
+df_train &lt;- df_train %&gt;%
+  mutate(TEAM_BATTING_SO =
+           ifelse(is.na(TEAM_BATTING_SO),
+                  train_means[8],TEAM_BATTING_SO))%&gt;% 
+  mutate(TEAM_BASERUN_SB = 
+           ifelse(is.na(TEAM_BASERUN_SB),
+                  train_means[9], TEAM_BASERUN_SB))%&gt;%
+  mutate(TEAM_BASERUN_CS =
+           ifelse(is.na(TEAM_BASERUN_CS),
+                  train_means[10], TEAM_BASERUN_CS))%&gt;%
+  mutate(TEAM_BATTING_HBP = 
+           ifelse(is.na(TEAM_BATTING_HBP),
+                  train_means[11],TEAM_BATTING_HBP))%&gt;%
+  mutate(TEAM_PITCHING_SO =
+           ifelse(is.na(TEAM_PITCHING_SO),
+                  train_means[15], TEAM_PITCHING_SO))%&gt;%
+  mutate(TEAM_FIELDING_DP =
+           ifelse(is.na(TEAM_FIELDING_DP),
+                  train_means[17], TEAM_FIELDING_DP))</code></pre>
+<p><strong>Replace NA values with their respective Medians</strong></p>
+<pre class="r"><code># Replace NA values in &#39;column_name&#39; with &#39;median&#39;
+# df_train &lt;- df_train %&gt;%
+#   mutate(TEAM_BATTING_SO =
+#            ifelse(is.na(TEAM_BATTING_SO),
+#                   train_medians[8],TEAM_BATTING_SO))%&gt;% 
+#   mutate(TEAM_BASERUN_SB = 
+#            ifelse(is.na(TEAM_BASERUN_SB),
+#                   train_medians[9], TEAM_BASERUN_SB))%&gt;%
+#   mutate(TEAM_BASERUN_CS =
+#            ifelse(is.na(TEAM_BASERUN_CS),
+#                   train_medians[10], TEAM_BASERUN_CS))%&gt;%
+#   mutate(TEAM_BATTING_HBP = 
+#            ifelse(is.na(TEAM_BATTING_HBP),
+#                   train_medians[11],TEAM_BATTING_HBP))%&gt;%
+#   mutate(TEAM_PITCHING_SO =
+#            ifelse(is.na(TEAM_PITCHING_SO),
+#                   train_medians[15], TEAM_PITCHING_SO))%&gt;%
+#   mutate(TEAM_FIELDING_DP =
+#            ifelse(is.na(TEAM_FIELDING_DP),
+#                   train_medians[17], TEAM_FIELDING_DP))</code></pre>
+<p><strong>Note:</strong></p>
+<pre><code>      While deciding on whether to use &#39;Mean&#39; or &#39;Media&#39; both 
+      codes were generated. Unutilized code, whether Mead or Median
+      replacement is left commented out, since it will not be used.</code></pre>
 </div>
 <div id="reference" class="section level3">
 <h3>Reference</h3>

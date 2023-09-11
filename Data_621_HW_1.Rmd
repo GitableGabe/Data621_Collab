@@ -80,7 +80,7 @@ For the multiple linear regression model, will you use a metric such as Adjusted
 
 ### Evaluation 
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, message=FALSE}
 library(skimr)
 library(dplyr)
 ```
@@ -95,23 +95,27 @@ df_train <- read.csv("https://raw.githubusercontent.com/melbow2424/Data621_HW1/m
 df_evaluation <- read.csv("https://raw.githubusercontent.com/melbow2424/Data621_HW1/main/moneyball-evaluation-data.csv")
 ```
 
-**Review**
+**Review Data**
 
 ```{r}
 skim(df_train)
 ```
+
+**Get the Means of columns in Training Data**
 
 ```{r}
 train_means<-sapply(df_train, function(x) round(mean(x, na.rm = TRUE)))
 train_means
 ```
 
+**Get the Medians of columns in training data**
+
 ```{r}
 train_medians<-sapply(df_train, function(x) round(median(x, na.rm = TRUE)))
 train_medians
 ```
 
-
+**Replace NA values in columns with their respective Mean**
 
 ```{r}
 # Replace NA values in 'column_name' with 'means'
@@ -136,6 +140,8 @@ df_train <- df_train %>%
                   train_means[17], TEAM_FIELDING_DP))
 ```
 
+**Replace NA values with their respective Medians**
+
 ```{r}
 # Replace NA values in 'column_name' with 'median'
 # df_train <- df_train %>%
@@ -158,6 +164,12 @@ df_train <- df_train %>%
 #            ifelse(is.na(TEAM_FIELDING_DP),
 #                   train_medians[17], TEAM_FIELDING_DP))
 ```
+
+**Note:**
+
+          While deciding on whether to use 'Mean' or 'Media' both 
+          codes were generated. Unutilized code, whether Mead or Median
+          replacement is left commented out, since it will not be used.
 
 ### Reference
 
