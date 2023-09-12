@@ -2143,7 +2143,7 @@ train_medians</code></pre>
 ##              149</code></pre>
 <p><strong>Replace NA values in columns with their respective
 Mean</strong></p>
-<pre class="r"><code># Replace NA values in &#39;column_name&#39; with &#39;means&#39;
+<pre class="r"><code># Replace NA values in &#39;column_name&#39; with &#39;mean&#39;
 df_train &lt;- df_train %&gt;%
   mutate(TEAM_BATTING_SO =
            ifelse(is.na(TEAM_BATTING_SO),
@@ -2185,9 +2185,301 @@ df_train &lt;- df_train %&gt;%
 #            ifelse(is.na(TEAM_FIELDING_DP),
 #                   train_medians[17], TEAM_FIELDING_DP))</code></pre>
 <p><strong>Note:</strong></p>
-<pre><code>      While deciding on whether to use &#39;Mean&#39; or &#39;Media&#39; both 
-      codes were generated. Unutilized code, whether Mead or Median
-      replacement is left commented out, since it will not be used.</code></pre>
+<pre><code>      While deciding on whether to use &#39;Mean&#39; or &#39;Median&#39; both 
+      codes were generated. Unused replacement is left 
+      commented out, since only one can be applied at a time.</code></pre>
+<pre class="r"><code>skim(df_train)</code></pre>
+<table>
+<caption>Data summary</caption>
+<tbody>
+<tr class="odd">
+<td align="left">Name</td>
+<td align="left">df_train</td>
+</tr>
+<tr class="even">
+<td align="left">Number of rows</td>
+<td align="left">2276</td>
+</tr>
+<tr class="odd">
+<td align="left">Number of columns</td>
+<td align="left">17</td>
+</tr>
+<tr class="even">
+<td align="left">_______________________</td>
+<td align="left"></td>
+</tr>
+<tr class="odd">
+<td align="left">Column type frequency:</td>
+<td align="left"></td>
+</tr>
+<tr class="even">
+<td align="left">numeric</td>
+<td align="left">17</td>
+</tr>
+<tr class="odd">
+<td align="left">________________________</td>
+<td align="left"></td>
+</tr>
+<tr class="even">
+<td align="left">Group variables</td>
+<td align="left">None</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Variable type: numeric</strong></p>
+<table>
+<colgroup>
+<col width="17%" />
+<col width="10%" />
+<col width="14%" />
+<col width="8%" />
+<col width="8%" />
+<col width="5%" />
+<col width="8%" />
+<col width="7%" />
+<col width="8%" />
+<col width="6%" />
+<col width="6%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">skim_variable</th>
+<th align="right">n_missing</th>
+<th align="right">complete_rate</th>
+<th align="right">mean</th>
+<th align="right">sd</th>
+<th align="right">p0</th>
+<th align="right">p25</th>
+<th align="right">p50</th>
+<th align="right">p75</th>
+<th align="right">p100</th>
+<th align="left">hist</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">INDEX</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">1268.46</td>
+<td align="right">736.35</td>
+<td align="right">1</td>
+<td align="right">630.75</td>
+<td align="right">1270.5</td>
+<td align="right">1915.50</td>
+<td align="right">2535</td>
+<td align="left">▇▇▇▇▇</td>
+</tr>
+<tr class="even">
+<td align="left">TARGET_WINS</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">80.79</td>
+<td align="right">15.75</td>
+<td align="right">0</td>
+<td align="right">71.00</td>
+<td align="right">82.0</td>
+<td align="right">92.00</td>
+<td align="right">146</td>
+<td align="left">▁▁▇▅▁</td>
+</tr>
+<tr class="odd">
+<td align="left">TEAM_BATTING_H</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">1469.27</td>
+<td align="right">144.59</td>
+<td align="right">891</td>
+<td align="right">1383.00</td>
+<td align="right">1454.0</td>
+<td align="right">1537.25</td>
+<td align="right">2554</td>
+<td align="left">▁▇▂▁▁</td>
+</tr>
+<tr class="even">
+<td align="left">TEAM_BATTING_2B</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">241.25</td>
+<td align="right">46.80</td>
+<td align="right">69</td>
+<td align="right">208.00</td>
+<td align="right">238.0</td>
+<td align="right">273.00</td>
+<td align="right">458</td>
+<td align="left">▁▆▇▂▁</td>
+</tr>
+<tr class="odd">
+<td align="left">TEAM_BATTING_3B</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">55.25</td>
+<td align="right">27.94</td>
+<td align="right">0</td>
+<td align="right">34.00</td>
+<td align="right">47.0</td>
+<td align="right">72.00</td>
+<td align="right">223</td>
+<td align="left">▇▇▂▁▁</td>
+</tr>
+<tr class="even">
+<td align="left">TEAM_BATTING_HR</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">99.61</td>
+<td align="right">60.55</td>
+<td align="right">0</td>
+<td align="right">42.00</td>
+<td align="right">102.0</td>
+<td align="right">147.00</td>
+<td align="right">264</td>
+<td align="left">▇▆▇▅▁</td>
+</tr>
+<tr class="odd">
+<td align="left">TEAM_BATTING_BB</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">501.56</td>
+<td align="right">122.67</td>
+<td align="right">0</td>
+<td align="right">451.00</td>
+<td align="right">512.0</td>
+<td align="right">580.00</td>
+<td align="right">878</td>
+<td align="left">▁▁▇▇▁</td>
+</tr>
+<tr class="even">
+<td align="left">TEAM_BATTING_SO</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">735.62</td>
+<td align="right">242.89</td>
+<td align="right">0</td>
+<td align="right">556.75</td>
+<td align="right">736.0</td>
+<td align="right">925.00</td>
+<td align="right">1399</td>
+<td align="left">▁▅▇▇▁</td>
+</tr>
+<tr class="odd">
+<td align="left">TEAM_BASERUN_SB</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">124.78</td>
+<td align="right">85.23</td>
+<td align="right">0</td>
+<td align="right">67.00</td>
+<td align="right">106.0</td>
+<td align="right">151.00</td>
+<td align="right">697</td>
+<td align="left">▇▂▁▁▁</td>
+</tr>
+<tr class="even">
+<td align="left">TEAM_BASERUN_CS</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">52.87</td>
+<td align="right">18.66</td>
+<td align="right">0</td>
+<td align="right">44.00</td>
+<td align="right">53.0</td>
+<td align="right">54.25</td>
+<td align="right">201</td>
+<td align="left">▂▇▁▁▁</td>
+</tr>
+<tr class="odd">
+<td align="left">TEAM_BATTING_HBP</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">59.03</td>
+<td align="right">3.75</td>
+<td align="right">29</td>
+<td align="right">59.00</td>
+<td align="right">59.0</td>
+<td align="right">59.00</td>
+<td align="right">95</td>
+<td align="left">▁▁▇▁▁</td>
+</tr>
+<tr class="even">
+<td align="left">TEAM_PITCHING_H</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">1779.21</td>
+<td align="right">1406.84</td>
+<td align="right">1137</td>
+<td align="right">1419.00</td>
+<td align="right">1518.0</td>
+<td align="right">1682.50</td>
+<td align="right">30132</td>
+<td align="left">▇▁▁▁▁</td>
+</tr>
+<tr class="odd">
+<td align="left">TEAM_PITCHING_HR</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">105.70</td>
+<td align="right">61.30</td>
+<td align="right">0</td>
+<td align="right">50.00</td>
+<td align="right">107.0</td>
+<td align="right">150.00</td>
+<td align="right">343</td>
+<td align="left">▇▇▆▁▁</td>
+</tr>
+<tr class="even">
+<td align="left">TEAM_PITCHING_BB</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">553.01</td>
+<td align="right">166.36</td>
+<td align="right">0</td>
+<td align="right">476.00</td>
+<td align="right">536.5</td>
+<td align="right">611.00</td>
+<td align="right">3645</td>
+<td align="left">▇▁▁▁▁</td>
+</tr>
+<tr class="odd">
+<td align="left">TEAM_PITCHING_SO</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">817.74</td>
+<td align="right">540.54</td>
+<td align="right">0</td>
+<td align="right">626.00</td>
+<td align="right">818.0</td>
+<td align="right">957.00</td>
+<td align="right">19278</td>
+<td align="left">▇▁▁▁▁</td>
+</tr>
+<tr class="even">
+<td align="left">TEAM_FIELDING_E</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">246.48</td>
+<td align="right">227.77</td>
+<td align="right">65</td>
+<td align="right">127.00</td>
+<td align="right">159.0</td>
+<td align="right">249.25</td>
+<td align="right">1898</td>
+<td align="left">▇▁▁▁▁</td>
+</tr>
+<tr class="odd">
+<td align="left">TEAM_FIELDING_DP</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">146.34</td>
+<td align="right">24.52</td>
+<td align="right">52</td>
+<td align="right">134.00</td>
+<td align="right">146.0</td>
+<td align="right">161.25</td>
+<td align="right">228</td>
+<td align="left">▁▂▇▅▁</td>
+</tr>
+</tbody>
+</table>
 </div>
 <div id="reference" class="section level3">
 <h3>Reference</h3>

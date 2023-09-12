@@ -118,7 +118,7 @@ train_medians
 **Replace NA values in columns with their respective Mean**
 
 ```{r}
-# Replace NA values in 'column_name' with 'means'
+# Replace NA values in 'column_name' with 'mean'
 df_train <- df_train %>%
   mutate(TEAM_BATTING_SO =
            ifelse(is.na(TEAM_BATTING_SO),
@@ -167,9 +167,13 @@ df_train <- df_train %>%
 
 **Note:**
 
-          While deciding on whether to use 'Mean' or 'Media' both 
-          codes were generated. Unutilized code, whether Mead or Median
-          replacement is left commented out, since it will not be used.
+          While deciding on whether to use 'Mean' or 'Median' both 
+          codes were generated. Unused replacement is left 
+          commented out, since only one can be applied at a time.
+
+```{r}
+skim(df_train)
+```
 
 ### Reference
 
