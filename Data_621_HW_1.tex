@@ -1,0 +1,631 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+%
+\documentclass[
+]{article}
+\usepackage{amsmath,amssymb}
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math} % this also loads fontspec
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+\usepackage{lmodern}
+\ifPDFTeX\else
+  % xetex/luatex font selection
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{xcolor}
+\usepackage[margin=1in]{geometry}
+\usepackage{color}
+\usepackage{fancyvrb}
+\newcommand{\VerbBar}{|}
+\newcommand{\VERB}{\Verb[commandchars=\\\{\}]}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+% Add ',fontsize=\small' for more characters per line
+\usepackage{framed}
+\definecolor{shadecolor}{RGB}{248,248,248}
+\newenvironment{Shaded}{\begin{snugshade}}{\end{snugshade}}
+\newcommand{\AlertTok}[1]{\textcolor[rgb]{0.94,0.16,0.16}{#1}}
+\newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\BuiltInTok}[1]{#1}
+\newcommand{\CharTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\CommentTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\DecValTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ErrorTok}[1]{\textcolor[rgb]{0.64,0.00,0.00}{\textbf{#1}}}
+\newcommand{\ExtensionTok}[1]{#1}
+\newcommand{\FloatTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\ImportTok}[1]{#1}
+\newcommand{\InformationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\NormalTok}[1]{#1}
+\newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
+\newcommand{\OtherTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\RegionMarkerTok}[1]{#1}
+\newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
+\newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\StringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\VariableTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\WarningTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\usepackage{longtable,booktabs,array}
+\usepackage{calc} % for calculating minipage widths
+% Correct order of tables after \paragraph or \subparagraph
+\usepackage{etoolbox}
+\makeatletter
+\patchcmd\longtable{\par}{\if@noskipsec\mbox{}\fi\par}{}{}
+\makeatother
+% Allow footnotes in longtable head/foot
+\IfFileExists{footnotehyper.sty}{\usepackage{footnotehyper}}{\usepackage{footnote}}
+\makesavenoteenv{longtable}
+\usepackage{graphicx}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+% Set default figure placement to htbp
+\makeatletter
+\def\fps@figure{htbp}
+\makeatother
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+\ifLuaTeX
+  \usepackage{selnolig}  % disable illegal ligatures
+\fi
+\IfFileExists{bookmark.sty}{\usepackage{bookmark}}{\usepackage{hyperref}}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\urlstyle{same}
+\hypersetup{
+  pdftitle={DATA 621 HW 1},
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+
+\title{DATA 621 HW 1}
+\author{}
+\date{\vspace{-2.5em}}
+
+\begin{document}
+\maketitle
+
+\hypertarget{business-analytics-and-data-mining}{%
+\section{\texorpdfstring{\textbf{Business Analytics and Data
+Mining}}{Business Analytics and Data Mining}}\label{business-analytics-and-data-mining}}
+
+\hypertarget{homework-1-assignment-requirements}{%
+\subsection{Homework \#1 Assignment
+Requirements}\label{homework-1-assignment-requirements}}
+
+\hypertarget{overview}{%
+\subsubsection{\texorpdfstring{\textbf{Overview}}{Overview}}\label{overview}}
+
+In this homework assignment, you will explore, analyze and model a data
+set containing approximately 2200 records. Each record represents a
+professional baseball team from the years 1871 to 2006 inclusive. Each
+record has the performance of the team for the given year, with all of
+the statistics adjusted to match the performance of a 162 game season.
+
+Your objective is to build a multiple linear regression model on the
+training data to predict the number of wins for the team. You can only
+use the variables given to you (or variables that you derive from the
+variables provided).
+
+Below is a short description of the variables of interest in the data
+set:
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.2727}}
+  >{\centering\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.4432}}
+  >{\raggedleft\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.2841}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+Variable Names
+\end{minipage} & \begin{minipage}[b]{\linewidth}\centering
+Definition
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+Theoretical Effect
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+INDEX & Identification Variable (do not use) & None \\
+TARGET\_WINS & Number of wins & \$12 \\
+TEAM\_BATTING\_H & Base Hits by batters (1B,2B,3B,HR) & Positive Impact
+on Wins \\
+TEAM\_BATTING\_2B & Doubles by batters (2B) & Positive Impact on Wins \\
+TEAM\_BATTING\_3B & Triples by batters (3B) & Positive Impact on Wins \\
+TEAM\_BATTING\_HR & Homeruns by batters (4B) & Positive Impact on
+Wins \\
+TEAM\_BATTING\_BB & Walks by batters & Positive Impact on Wins \\
+TEAM\_BATTING\_HBP & Batters hit by pitch (get a free base) & Positive
+Impact on Wins \\
+TEAM\_BATTING\_SO & Strikeouts by batters & Negative Impact on Wins \\
+TEAM\_BASERUN\_SB & Stolen bases & Positive Impact on Wins \\
+TEAM\_BASERUN\_CS & Caught stealing & Negative Impact on Wins \\
+TEAM\_FIELDING\_E & Errors & Negative Impact on Wins \\
+TEAM\_FIELDING\_DP & Double Plays & Positive Impact on Wins \\
+TEAM\_PITCHING\_BB & Walks allowed & Negative Impact on Wins \\
+TEAM\_PITCHING\_H & Hits allowed & Negative Impact on Wins \\
+TEAM\_PITCHING\_HR & Homeruns allowed & Negative Impact on Wins \\
+TEAM\_PITCHING\_SO & Strikeouts by pitchers & Positive Impact on Wins \\
+\end{longtable}
+
+\textbf{Deliverable:}
+
+\begin{itemize}
+\tightlist
+\item
+  A write-up submitted in PDF format. Your write-up should have four
+  sections. Each one is described below. You may assume you are
+  addressing me as a fellow data scientist, so do not need to shy away
+  from technical details.
+\item
+  Assigned predictions (the number of wins for the team) for the
+  evaluation data set.
+\item
+  Include your R statistical programming code in an Appendix.
+\end{itemize}
+
+\textbf{Write Up:}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  \textbf{DATA EXPLORATION (25 Points)} Describe the size and the
+  variables in the moneyball training data set. Consider that too much
+  detail will cause a manager to lose interest while too little detail
+  will make the manager consider that you aren't doing your job. Some
+  suggestions are given below. Please do NOT treat this as a check list
+  of things to do to complete the assignment. You should have your own
+  thoughts on what to tell the boss. These are just ideas.
+\end{enumerate}
+
+\begin{enumerate}
+\def\labelenumi{\alph{enumi}.}
+\tightlist
+\item
+  Mean / Standard Deviation / Median
+\item
+  Bar Chart or Box Plot of the data
+\item
+  Is the data correlated to the target variable (or to other variables?)
+\item
+  Are any of the variables missing and need to be imputed ``fixed''?
+\end{enumerate}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  \textbf{DATA PREPARATION (25 Points)} Describe how you have
+  transformed the data by changing the original variables or creating
+  new variables. If you did transform the data or create new variables,
+  discuss why you did this. Here are some possible transformations.
+\end{enumerate}
+
+\begin{enumerate}
+\def\labelenumi{\alph{enumi}.}
+\tightlist
+\item
+  Fix missing values (maybe with a Mean or Median value)
+\item
+  Create flags to suggest if a variable was missing
+\item
+  Transform data by putting it into buckets
+\item
+  Mathematical transforms such as log or square root (or use Box-Cox)
+\item
+  Combine variables (such as ratios or adding or multiplying) to create
+  new variables
+\end{enumerate}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{2}
+\tightlist
+\item
+  \textbf{BUILD MODELS (25 Points)} Using the training data set, build
+  at least three different multiple linear regression models, using
+  different variables (or the same variables with different
+  transformations). Since we have not yet covered automated variable
+  selection methods, you should select the variables manually (unless
+  you previously learned Forward or Stepwise selection, etc.). Since you
+  manually selected a variable for inclusion into the model or exclusion
+  into the model, indicate why this was done. Discuss the coefficients
+  in the models, do they make sense? For example, if a team hits a lot
+  of Home Runs, it would be reasonably expected that such a team would
+  win more games. However, if the coefficient is negative (suggesting
+  that the team would lose more games), then that needs to be discussed.
+  Are you keeping the model even though it is counter intuitive? Why?
+  The boss needs to know.
+\item
+  \textbf{SELECT MODELS (25 Points)} Decide on the criteria for
+  selecting the best multiple linear regression model. Will you select a
+  model with slightly worse performance if it makes more sense or is
+  more parsimonious? Discuss why you selected your model. For the
+  multiple linear regression model, will you use a metric such as
+  Adjusted R2 , RMSE, etc.? Be sure to explain how you can make
+  inferences from the model, discuss multi-collinearity issues (if any),
+  and discuss other relevant model output. Using the training data set,
+  evaluate the multiple linear regression model based on (a) mean
+  squared error, (b) R2, (c) F-statistic, and (d) residual plots. Make
+  predictions using the evaluation data set.
+\end{enumerate}
+
+\hypertarget{evaluation}{%
+\subsubsection{Evaluation}\label{evaluation}}
+
+\textbf{Load the data}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{df\_train }\OtherTok{\textless{}{-}} \FunctionTok{read.csv}\NormalTok{(}\StringTok{"https://raw.githubusercontent.com/melbow2424/Data621\_HW1/main/moneyball{-}training{-}data.csv"}\NormalTok{)}
+
+\NormalTok{df\_evaluation }\OtherTok{\textless{}{-}} \FunctionTok{read.csv}\NormalTok{(}\StringTok{"https://raw.githubusercontent.com/melbow2424/Data621\_HW1/main/moneyball{-}evaluation{-}data.csv"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\textbf{Review Data}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{skim}\NormalTok{(df\_train)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{longtable}[]{@{}ll@{}}
+\caption{Data summary}\tabularnewline
+\toprule\noalign{}
+\endfirsthead
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Name & df\_train \\
+Number of rows & 2276 \\
+Number of columns & 17 \\
+\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_ & \\
+Column type frequency: & \\
+numeric & 17 \\
+\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_ & \\
+Group variables & None \\
+\end{longtable}
+
+\textbf{Variable type: numeric}
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 20\tabcolsep) * \real{0.1753}}
+  >{\raggedleft\arraybackslash}p{(\columnwidth - 20\tabcolsep) * \real{0.1031}}
+  >{\raggedleft\arraybackslash}p{(\columnwidth - 20\tabcolsep) * \real{0.1443}}
+  >{\raggedleft\arraybackslash}p{(\columnwidth - 20\tabcolsep) * \real{0.0825}}
+  >{\raggedleft\arraybackslash}p{(\columnwidth - 20\tabcolsep) * \real{0.0825}}
+  >{\raggedleft\arraybackslash}p{(\columnwidth - 20\tabcolsep) * \real{0.0515}}
+  >{\raggedleft\arraybackslash}p{(\columnwidth - 20\tabcolsep) * \real{0.0825}}
+  >{\raggedleft\arraybackslash}p{(\columnwidth - 20\tabcolsep) * \real{0.0722}}
+  >{\raggedleft\arraybackslash}p{(\columnwidth - 20\tabcolsep) * \real{0.0825}}
+  >{\raggedleft\arraybackslash}p{(\columnwidth - 20\tabcolsep) * \real{0.0619}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 20\tabcolsep) * \real{0.0619}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+skim\_variable
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+n\_missing
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+complete\_rate
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+mean
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+sd
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+p0
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+p25
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+p50
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+p75
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+p100
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+hist
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+INDEX & 0 & 1.00 & 1268.46 & 736.35 & 1 & 630.75 & 1270.5 & 1915.50 &
+2535 & ▇▇▇▇▇ \\
+TARGET\_WINS & 0 & 1.00 & 80.79 & 15.75 & 0 & 71.00 & 82.0 & 92.00 & 146
+& ▁▁▇▅▁ \\
+TEAM\_BATTING\_H & 0 & 1.00 & 1469.27 & 144.59 & 891 & 1383.00 & 1454.0
+& 1537.25 & 2554 & ▁▇▂▁▁ \\
+TEAM\_BATTING\_2B & 0 & 1.00 & 241.25 & 46.80 & 69 & 208.00 & 238.0 &
+273.00 & 458 & ▁▆▇▂▁ \\
+TEAM\_BATTING\_3B & 0 & 1.00 & 55.25 & 27.94 & 0 & 34.00 & 47.0 & 72.00
+& 223 & ▇▇▂▁▁ \\
+TEAM\_BATTING\_HR & 0 & 1.00 & 99.61 & 60.55 & 0 & 42.00 & 102.0 &
+147.00 & 264 & ▇▆▇▅▁ \\
+TEAM\_BATTING\_BB & 0 & 1.00 & 501.56 & 122.67 & 0 & 451.00 & 512.0 &
+580.00 & 878 & ▁▁▇▇▁ \\
+TEAM\_BATTING\_SO & 102 & 0.96 & 735.61 & 248.53 & 0 & 548.00 & 750.0 &
+930.00 & 1399 & ▁▆▇▇▁ \\
+TEAM\_BASERUN\_SB & 131 & 0.94 & 124.76 & 87.79 & 0 & 66.00 & 101.0 &
+156.00 & 697 & ▇▃▁▁▁ \\
+TEAM\_BASERUN\_CS & 772 & 0.66 & 52.80 & 22.96 & 0 & 38.00 & 49.0 &
+62.00 & 201 & ▃▇▁▁▁ \\
+TEAM\_BATTING\_HBP & 2085 & 0.08 & 59.36 & 12.97 & 29 & 50.50 & 58.0 &
+67.00 & 95 & ▂▇▇▅▁ \\
+TEAM\_PITCHING\_H & 0 & 1.00 & 1779.21 & 1406.84 & 1137 & 1419.00 &
+1518.0 & 1682.50 & 30132 & ▇▁▁▁▁ \\
+TEAM\_PITCHING\_HR & 0 & 1.00 & 105.70 & 61.30 & 0 & 50.00 & 107.0 &
+150.00 & 343 & ▇▇▆▁▁ \\
+TEAM\_PITCHING\_BB & 0 & 1.00 & 553.01 & 166.36 & 0 & 476.00 & 536.5 &
+611.00 & 3645 & ▇▁▁▁▁ \\
+TEAM\_PITCHING\_SO & 102 & 0.96 & 817.73 & 553.09 & 0 & 615.00 & 813.5 &
+968.00 & 19278 & ▇▁▁▁▁ \\
+TEAM\_FIELDING\_E & 0 & 1.00 & 246.48 & 227.77 & 65 & 127.00 & 159.0 &
+249.25 & 1898 & ▇▁▁▁▁ \\
+TEAM\_FIELDING\_DP & 286 & 0.87 & 146.39 & 26.23 & 52 & 131.00 & 149.0 &
+164.00 & 228 & ▁▂▇▆▁ \\
+\end{longtable}
+
+\textbf{Get the Means of columns in Training Data}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{train\_means}\OtherTok{\textless{}{-}}\FunctionTok{sapply}\NormalTok{(df\_train, }\ControlFlowTok{function}\NormalTok{(x) }\FunctionTok{round}\NormalTok{(}\FunctionTok{mean}\NormalTok{(x, }\AttributeTok{na.rm =} \ConstantTok{TRUE}\NormalTok{)))}
+\NormalTok{train\_means}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##            INDEX      TARGET_WINS   TEAM_BATTING_H  TEAM_BATTING_2B 
+##             1268               81             1469              241 
+##  TEAM_BATTING_3B  TEAM_BATTING_HR  TEAM_BATTING_BB  TEAM_BATTING_SO 
+##               55              100              502              736 
+##  TEAM_BASERUN_SB  TEAM_BASERUN_CS TEAM_BATTING_HBP  TEAM_PITCHING_H 
+##              125               53               59             1779 
+## TEAM_PITCHING_HR TEAM_PITCHING_BB TEAM_PITCHING_SO  TEAM_FIELDING_E 
+##              106              553              818              246 
+## TEAM_FIELDING_DP 
+##              146
+\end{verbatim}
+
+\textbf{Get the Medians of columns in training data}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{train\_medians}\OtherTok{\textless{}{-}}\FunctionTok{sapply}\NormalTok{(df\_train, }\ControlFlowTok{function}\NormalTok{(x) }\FunctionTok{round}\NormalTok{(}\FunctionTok{median}\NormalTok{(x, }\AttributeTok{na.rm =} \ConstantTok{TRUE}\NormalTok{)))}
+\NormalTok{train\_medians}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##            INDEX      TARGET_WINS   TEAM_BATTING_H  TEAM_BATTING_2B 
+##             1270               82             1454              238 
+##  TEAM_BATTING_3B  TEAM_BATTING_HR  TEAM_BATTING_BB  TEAM_BATTING_SO 
+##               47              102              512              750 
+##  TEAM_BASERUN_SB  TEAM_BASERUN_CS TEAM_BATTING_HBP  TEAM_PITCHING_H 
+##              101               49               58             1518 
+## TEAM_PITCHING_HR TEAM_PITCHING_BB TEAM_PITCHING_SO  TEAM_FIELDING_E 
+##              107              536              814              159 
+## TEAM_FIELDING_DP 
+##              149
+\end{verbatim}
+
+\textbf{Replace NA values in columns with their respective Mean}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Replace NA values in \textquotesingle{}column\_name\textquotesingle{} with \textquotesingle{}mean\textquotesingle{}}
+\NormalTok{df\_train }\OtherTok{\textless{}{-}}\NormalTok{ df\_train }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{mutate}\NormalTok{(}\AttributeTok{TEAM\_BATTING\_SO =}
+           \FunctionTok{ifelse}\NormalTok{(}\FunctionTok{is.na}\NormalTok{(TEAM\_BATTING\_SO),}
+\NormalTok{                  train\_means[}\DecValTok{8}\NormalTok{],TEAM\_BATTING\_SO))}\SpecialCharTok{\%\textgreater{}\%} 
+  \FunctionTok{mutate}\NormalTok{(}\AttributeTok{TEAM\_BASERUN\_SB =} 
+           \FunctionTok{ifelse}\NormalTok{(}\FunctionTok{is.na}\NormalTok{(TEAM\_BASERUN\_SB),}
+\NormalTok{                  train\_means[}\DecValTok{9}\NormalTok{], TEAM\_BASERUN\_SB))}\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{mutate}\NormalTok{(}\AttributeTok{TEAM\_BASERUN\_CS =}
+           \FunctionTok{ifelse}\NormalTok{(}\FunctionTok{is.na}\NormalTok{(TEAM\_BASERUN\_CS),}
+\NormalTok{                  train\_means[}\DecValTok{10}\NormalTok{], TEAM\_BASERUN\_CS))}\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{mutate}\NormalTok{(}\AttributeTok{TEAM\_BATTING\_HBP =} 
+           \FunctionTok{ifelse}\NormalTok{(}\FunctionTok{is.na}\NormalTok{(TEAM\_BATTING\_HBP),}
+\NormalTok{                  train\_means[}\DecValTok{11}\NormalTok{],TEAM\_BATTING\_HBP))}\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{mutate}\NormalTok{(}\AttributeTok{TEAM\_PITCHING\_SO =}
+           \FunctionTok{ifelse}\NormalTok{(}\FunctionTok{is.na}\NormalTok{(TEAM\_PITCHING\_SO),}
+\NormalTok{                  train\_means[}\DecValTok{15}\NormalTok{], TEAM\_PITCHING\_SO))}\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{mutate}\NormalTok{(}\AttributeTok{TEAM\_FIELDING\_DP =}
+           \FunctionTok{ifelse}\NormalTok{(}\FunctionTok{is.na}\NormalTok{(TEAM\_FIELDING\_DP),}
+\NormalTok{                  train\_means[}\DecValTok{17}\NormalTok{], TEAM\_FIELDING\_DP))}
+\end{Highlighting}
+\end{Shaded}
+
+\textbf{Replace NA values with their respective Medians}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Replace NA values in \textquotesingle{}column\_name\textquotesingle{} with \textquotesingle{}median\textquotesingle{}}
+\CommentTok{\# df\_train \textless{}{-} df\_train \%\textgreater{}\%}
+\CommentTok{\#   mutate(TEAM\_BATTING\_SO =}
+\CommentTok{\#            ifelse(is.na(TEAM\_BATTING\_SO),}
+\CommentTok{\#                   train\_medians[8],TEAM\_BATTING\_SO))\%\textgreater{}\% }
+\CommentTok{\#   mutate(TEAM\_BASERUN\_SB = }
+\CommentTok{\#            ifelse(is.na(TEAM\_BASERUN\_SB),}
+\CommentTok{\#                   train\_medians[9], TEAM\_BASERUN\_SB))\%\textgreater{}\%}
+\CommentTok{\#   mutate(TEAM\_BASERUN\_CS =}
+\CommentTok{\#            ifelse(is.na(TEAM\_BASERUN\_CS),}
+\CommentTok{\#                   train\_medians[10], TEAM\_BASERUN\_CS))\%\textgreater{}\%}
+\CommentTok{\#   mutate(TEAM\_BATTING\_HBP = }
+\CommentTok{\#            ifelse(is.na(TEAM\_BATTING\_HBP),}
+\CommentTok{\#                   train\_medians[11],TEAM\_BATTING\_HBP))\%\textgreater{}\%}
+\CommentTok{\#   mutate(TEAM\_PITCHING\_SO =}
+\CommentTok{\#            ifelse(is.na(TEAM\_PITCHING\_SO),}
+\CommentTok{\#                   train\_medians[15], TEAM\_PITCHING\_SO))\%\textgreater{}\%}
+\CommentTok{\#   mutate(TEAM\_FIELDING\_DP =}
+\CommentTok{\#            ifelse(is.na(TEAM\_FIELDING\_DP),}
+\CommentTok{\#                   train\_medians[17], TEAM\_FIELDING\_DP))}
+\end{Highlighting}
+\end{Shaded}
+
+\textbf{Note:}
+
+\begin{verbatim}
+      While deciding on whether to use 'Mean' or 'Median' both 
+      codes were generated. Unused replacement is left 
+      commented out, since only one can be applied at a time.
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{skim}\NormalTok{(df\_train)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{longtable}[]{@{}ll@{}}
+\caption{Data summary}\tabularnewline
+\toprule\noalign{}
+\endfirsthead
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Name & df\_train \\
+Number of rows & 2276 \\
+Number of columns & 17 \\
+\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_ & \\
+Column type frequency: & \\
+numeric & 17 \\
+\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_ & \\
+Group variables & None \\
+\end{longtable}
+
+\textbf{Variable type: numeric}
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 20\tabcolsep) * \real{0.1753}}
+  >{\raggedleft\arraybackslash}p{(\columnwidth - 20\tabcolsep) * \real{0.1031}}
+  >{\raggedleft\arraybackslash}p{(\columnwidth - 20\tabcolsep) * \real{0.1443}}
+  >{\raggedleft\arraybackslash}p{(\columnwidth - 20\tabcolsep) * \real{0.0825}}
+  >{\raggedleft\arraybackslash}p{(\columnwidth - 20\tabcolsep) * \real{0.0825}}
+  >{\raggedleft\arraybackslash}p{(\columnwidth - 20\tabcolsep) * \real{0.0515}}
+  >{\raggedleft\arraybackslash}p{(\columnwidth - 20\tabcolsep) * \real{0.0825}}
+  >{\raggedleft\arraybackslash}p{(\columnwidth - 20\tabcolsep) * \real{0.0722}}
+  >{\raggedleft\arraybackslash}p{(\columnwidth - 20\tabcolsep) * \real{0.0825}}
+  >{\raggedleft\arraybackslash}p{(\columnwidth - 20\tabcolsep) * \real{0.0619}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 20\tabcolsep) * \real{0.0619}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+skim\_variable
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+n\_missing
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+complete\_rate
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+mean
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+sd
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+p0
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+p25
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+p50
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+p75
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+p100
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+hist
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+INDEX & 0 & 1 & 1268.46 & 736.35 & 1 & 630.75 & 1270.5 & 1915.50 & 2535
+& ▇▇▇▇▇ \\
+TARGET\_WINS & 0 & 1 & 80.79 & 15.75 & 0 & 71.00 & 82.0 & 92.00 & 146 &
+▁▁▇▅▁ \\
+TEAM\_BATTING\_H & 0 & 1 & 1469.27 & 144.59 & 891 & 1383.00 & 1454.0 &
+1537.25 & 2554 & ▁▇▂▁▁ \\
+TEAM\_BATTING\_2B & 0 & 1 & 241.25 & 46.80 & 69 & 208.00 & 238.0 &
+273.00 & 458 & ▁▆▇▂▁ \\
+TEAM\_BATTING\_3B & 0 & 1 & 55.25 & 27.94 & 0 & 34.00 & 47.0 & 72.00 &
+223 & ▇▇▂▁▁ \\
+TEAM\_BATTING\_HR & 0 & 1 & 99.61 & 60.55 & 0 & 42.00 & 102.0 & 147.00 &
+264 & ▇▆▇▅▁ \\
+TEAM\_BATTING\_BB & 0 & 1 & 501.56 & 122.67 & 0 & 451.00 & 512.0 &
+580.00 & 878 & ▁▁▇▇▁ \\
+TEAM\_BATTING\_SO & 0 & 1 & 735.62 & 242.89 & 0 & 556.75 & 736.0 &
+925.00 & 1399 & ▁▅▇▇▁ \\
+TEAM\_BASERUN\_SB & 0 & 1 & 124.78 & 85.23 & 0 & 67.00 & 106.0 & 151.00
+& 697 & ▇▂▁▁▁ \\
+TEAM\_BASERUN\_CS & 0 & 1 & 52.87 & 18.66 & 0 & 44.00 & 53.0 & 54.25 &
+201 & ▂▇▁▁▁ \\
+TEAM\_BATTING\_HBP & 0 & 1 & 59.03 & 3.75 & 29 & 59.00 & 59.0 & 59.00 &
+95 & ▁▁▇▁▁ \\
+TEAM\_PITCHING\_H & 0 & 1 & 1779.21 & 1406.84 & 1137 & 1419.00 & 1518.0
+& 1682.50 & 30132 & ▇▁▁▁▁ \\
+TEAM\_PITCHING\_HR & 0 & 1 & 105.70 & 61.30 & 0 & 50.00 & 107.0 & 150.00
+& 343 & ▇▇▆▁▁ \\
+TEAM\_PITCHING\_BB & 0 & 1 & 553.01 & 166.36 & 0 & 476.00 & 536.5 &
+611.00 & 3645 & ▇▁▁▁▁ \\
+TEAM\_PITCHING\_SO & 0 & 1 & 817.74 & 540.54 & 0 & 626.00 & 818.0 &
+957.00 & 19278 & ▇▁▁▁▁ \\
+TEAM\_FIELDING\_E & 0 & 1 & 246.48 & 227.77 & 65 & 127.00 & 159.0 &
+249.25 & 1898 & ▇▁▁▁▁ \\
+TEAM\_FIELDING\_DP & 0 & 1 & 146.34 & 24.52 & 52 & 134.00 & 146.0 &
+161.25 & 228 & ▁▂▇▅▁ \\
+\end{longtable}
+
+\hypertarget{reference}{%
+\subsubsection{Reference}\label{reference}}
+
+\begin{itemize}
+\tightlist
+\item
+  ``Pythagorean Theorem of Baseball.'' Baseball Reference,
+  \url{https://www.baseball-reference.com/bullpen/Pythagorean_Theorem_of_Baseball}.
+  Accessed 11 September 2023.
+\item
+  No author listed. ``Pythagorean Expectation in Major League
+  Baseball.'' Digital Commons @ Cal Poly,
+  \url{https://digitalcommons.calpoly.edu/cgi/viewcontent.cgi?article=1067\&context=statsp}.
+  Accessed 11 September 2023.
+\end{itemize}
+
+\end{document}

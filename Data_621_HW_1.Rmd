@@ -1,12 +1,13 @@
 ---
 title: "DATA 621 HW 1"
 output:
+  pdf_document: default
   html_document:
     df_print: paged
 ---
 
 # **Business Analytics and Data Mining**
-## Homework #1 Assignment Requirements{.tabset}
+## Homework #1 Assignment Requirements
 
 ### **Overview** 
 In this homework assignment, you will explore, analyze and model a data set containing approximately 2200 records. Each record represents a professional baseball team from the years 1871 to 2006 inclusive. Each record has the performance of the team for the given year, with all of the statistics adjusted to match the performance of a 162 game season.
