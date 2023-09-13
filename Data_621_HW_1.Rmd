@@ -1,9 +1,9 @@
 ---
 title: "DATA 621 HW 1"
 output:
-  pdf_document: default
   html_document:
     df_print: paged
+  pdf_document: default
 ---
 
 # **Business Analytics and Data Mining**

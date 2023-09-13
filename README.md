@@ -4,7 +4,12 @@
 
 Notes: 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-utilize boxplots
-find IQR
+utilize boxplots?
+find IQR?
+Select specific variables
+Team Wins Dependent variable
+Drop NAs?
+Sub w/mean, median, 0's?
+
 
 
