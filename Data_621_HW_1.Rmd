@@ -114,20 +114,26 @@ df_evaluation <-
 print(skim(df_train))
 ```
 
-#### **Get the Means of columns in Training Data**
+#### **Get the Means of columns in Data**
 
 ```{r}
 train_means<-sapply(df_train, function(x) round(mean(x, na.rm = TRUE)))
 train_means
 ```
-
-#### **Get the Medians of columns in training data**
+```{r}
+eval_means<-sapply(df_evaluation, function(x) round(mean(x, na.rm = TRUE)))
+eval_means
+```
+#### **Get the Medians of columns in data**
 
 ```{r}
 train_medians<-sapply(df_train, function(x) round(median(x, na.rm = TRUE)))
 train_medians
 ```
-
+```{r}
+eval_medians<-sapply(df_evaluation, function(x) round(median(x, na.rm = TRUE)))
+eval_medians
+```
 #### **Replace NA values in columns with their respective Mean**
 
 ```{r}
@@ -152,6 +158,29 @@ df_train_mn <- df_train %>%
            ifelse(is.na(TEAM_FIELDING_DP),
                   train_means[17], TEAM_FIELDING_DP))
 ```
+
+```{r}
+df_evaluation_mn <- df_evaluation %>%
+  mutate(TEAM_BATTING_SO =
+           ifelse(is.na(TEAM_BATTING_SO),
+                  eval_means[8],TEAM_BATTING_SO))%>% 
+  mutate(TEAM_BASERUN_SB = 
+           ifelse(is.na(TEAM_BASERUN_SB),
+                  eval_means[9], TEAM_BASERUN_SB))%>%
+  mutate(TEAM_BASERUN_CS =
+           ifelse(is.na(TEAM_BASERUN_CS),
+                  eval_means[10], TEAM_BASERUN_CS))%>%
+  mutate(TEAM_BATTING_HBP = 
+           ifelse(is.na(TEAM_BATTING_HBP),
+                  eval_means[11],TEAM_BATTING_HBP))%>%
+  mutate(TEAM_PITCHING_SO =
+           ifelse(is.na(TEAM_PITCHING_SO),
+                  eval_means[15], TEAM_PITCHING_SO))%>%
+  mutate(TEAM_FIELDING_DP =
+           ifelse(is.na(TEAM_FIELDING_DP),
+                  eval_means[17], TEAM_FIELDING_DP))
+```
+
 
 #### **Replace NA values with their respective Medians**
 
@@ -178,6 +207,28 @@ df_train_md <- df_train %>%
                   train_medians[17], TEAM_FIELDING_DP))
 ```
 
+```{r}
+df_evaluation_md <- df_evaluation %>%
+  mutate(TEAM_BATTING_SO =
+           ifelse(is.na(TEAM_BATTING_SO),
+                  eval_medians[8],TEAM_BATTING_SO))%>% 
+  mutate(TEAM_BASERUN_SB = 
+           ifelse(is.na(TEAM_BASERUN_SB),
+                  eval_medians[9], TEAM_BASERUN_SB))%>%
+  mutate(TEAM_BASERUN_CS =
+           ifelse(is.na(TEAM_BASERUN_CS),
+                  eval_medians[10], TEAM_BASERUN_CS))%>%
+  mutate(TEAM_BATTING_HBP = 
+           ifelse(is.na(TEAM_BATTING_HBP),
+                  eval_medians[11],TEAM_BATTING_HBP))%>%
+  mutate(TEAM_PITCHING_SO =
+           ifelse(is.na(TEAM_PITCHING_SO),
+                  eval_medians[15], TEAM_PITCHING_SO))%>%
+  mutate(TEAM_FIELDING_DP =
+           ifelse(is.na(TEAM_FIELDING_DP),
+                  eval_medians[17], TEAM_FIELDING_DP))
+```
+
 #### **Replace NA values with 0**
 
 ```{r}
@@ -201,6 +252,36 @@ df_train_0 <- df_train %>%
     TEAM_FIELDING_E = 0,
     TEAM_FIELDING_DP = 0
   ))
+```
+
+```{r}
+df_evaluation_0 <- df_evaluation %>%
+  replace_na(list(
+    INDEX = 0,
+    TARGET_WINS = 0,
+    TEAM_BATTING_H = 0,
+    TEAM_BATTING_2B = 0,
+    TEAM_BATTING_3B = 0,
+    TEAM_BATTING_HR = 0,
+    TEAM_BATTING_BB = 0,
+    TEAM_BATTING_SO = 0,
+    TEAM_BASERUN_SB = 0,
+    TEAM_BASERUN_CS = 0,
+    TEAM_BATTING_HBP = 0,
+    TEAM_PITCHING_H = 0,
+    TEAM_PITCHING_HR = 0,
+    TEAM_PITCHING_BB = 0,
+    TEAM_PITCHING_SO = 0,
+    TEAM_FIELDING_E = 0,
+    TEAM_FIELDING_DP = 0
+  ))
+```
+
+### Remove all rows with NA's
+
+```{r}
+df_train_rm<- na.omit(df_train)
+df_evaluation_rm<- na.omit(df_evaluation)
 ```
 
 
