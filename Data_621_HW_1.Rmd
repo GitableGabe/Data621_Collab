@@ -1,10 +1,22 @@
 ---
 title: "DATA 621 HW 1"
+date: "Last edited `r format(Sys.time(), '%B %d, %Y')`"
 output:
+  pdf_document:
+    latex_engine: xelatex
+  geometry: "left=0.5cm,right=0.5cm,top=1cm,bottom=2cm"
   html_document:
     df_print: paged
-  pdf_document: default
 ---
+
+```{r, echo=FALSE, message=FALSE}
+library(tidyr)
+library(skimr)
+library(dplyr)
+library(knitr)
+# Set so that long lines in R will be wrapped:
+opts_chunk$set(tidy.opts=list(width.cutoff=60),tidy=TRUE)
+```
 
 # **Business Analytics and Data Mining**
 ## Homework #1 Assignment Requirements{.tabset}
@@ -46,13 +58,13 @@ tabl <- "
 "
 cat(tabl) # output the table in a format good for HTML/PDF/docx conversion
 ```
-**Deliverable:**
+### **Deliverable:**
 
 * A write-up submitted in PDF format. Your write-up should have four sections. Each one is described below. You may assume you are addressing me as a fellow data scientist, so do not need to shy away from technical details.
 * Assigned predictions (the number of wins for the team) for the evaluation data set.
 * Include your R statistical programming code in an Appendix.
 
-**Write Up:**
+### **Write Up:**
 
 1. **DATA EXPLORATION (25 Points)**
 Describe the size and the variables in the moneyball training data set. Consider that too much detail will cause a manager to lose interest while too little detail will make the manager consider that you aren’t doing your job. Some suggestions are given below. Please do NOT treat this as a check list of things to do to complete the assignment.
@@ -78,49 +90,49 @@ Decide on the criteria for selecting the best multiple linear regression model. 
 For the multiple linear regression model, will you use a metric such as Adjusted R2
 , RMSE, etc.? Be sure to explain how you can make inferences from the model, discuss multi-collinearity issues (if any), and discuss other relevant model output. Using the training data set, evaluate the multiple linear regression model based on (a) mean squared error, (b) R2, (c) F-statistic, and (d) residual plots. Make predictions using the evaluation data set.
 
+\newpage
 
-### Evaluation 
+## **Evaluation** 
 
-```{r, echo=FALSE, message=FALSE}
-library(skimr)
-library(dplyr)
-```
-
-
-
-**Load the data**
+### **Load the data**
 
 ```{r}
-df_train <- read.csv("https://raw.githubusercontent.com/melbow2424/Data621_HW1/main/moneyball-training-data.csv")
+git_url<-
+  "https://raw.githubusercontent.com/melbow2424/Data621_HW1/main/"
 
-df_evaluation <- read.csv("https://raw.githubusercontent.com/melbow2424/Data621_HW1/main/moneyball-evaluation-data.csv")
+df_train <- 
+  read.csv(paste0(git_url,"moneyball-training-data.csv"))
+
+df_evaluation <- 
+  read.csv(paste0(git_url,"moneyball-evaluation-data.csv"))
 ```
 
-**Review Data**
+### **Review Data**
 
-```{r}
-skim(df_train)
+
+```{r, out.width=".9\\paperwidth"}
+print(skim(df_train))
 ```
 
-**Get the Means of columns in Training Data**
+#### **Get the Means of columns in Training Data**
 
 ```{r}
 train_means<-sapply(df_train, function(x) round(mean(x, na.rm = TRUE)))
 train_means
 ```
 
-**Get the Medians of columns in training data**
+#### **Get the Medians of columns in training data**
 
 ```{r}
 train_medians<-sapply(df_train, function(x) round(median(x, na.rm = TRUE)))
 train_medians
 ```
 
-**Replace NA values in columns with their respective Mean**
+#### **Replace NA values in columns with their respective Mean**
 
 ```{r}
 # Replace NA values in 'column_name' with 'mean'
-df_train <- df_train %>%
+df_train_mn <- df_train %>%
   mutate(TEAM_BATTING_SO =
            ifelse(is.na(TEAM_BATTING_SO),
                   train_means[8],TEAM_BATTING_SO))%>% 
@@ -141,40 +153,79 @@ df_train <- df_train %>%
                   train_means[17], TEAM_FIELDING_DP))
 ```
 
-**Replace NA values with their respective Medians**
+#### **Replace NA values with their respective Medians**
 
 ```{r}
 # Replace NA values in 'column_name' with 'median'
-# df_train <- df_train %>%
-#   mutate(TEAM_BATTING_SO =
-#            ifelse(is.na(TEAM_BATTING_SO),
-#                   train_medians[8],TEAM_BATTING_SO))%>% 
-#   mutate(TEAM_BASERUN_SB = 
-#            ifelse(is.na(TEAM_BASERUN_SB),
-#                   train_medians[9], TEAM_BASERUN_SB))%>%
-#   mutate(TEAM_BASERUN_CS =
-#            ifelse(is.na(TEAM_BASERUN_CS),
-#                   train_medians[10], TEAM_BASERUN_CS))%>%
-#   mutate(TEAM_BATTING_HBP = 
-#            ifelse(is.na(TEAM_BATTING_HBP),
-#                   train_medians[11],TEAM_BATTING_HBP))%>%
-#   mutate(TEAM_PITCHING_SO =
-#            ifelse(is.na(TEAM_PITCHING_SO),
-#                   train_medians[15], TEAM_PITCHING_SO))%>%
-#   mutate(TEAM_FIELDING_DP =
-#            ifelse(is.na(TEAM_FIELDING_DP),
-#                   train_medians[17], TEAM_FIELDING_DP))
+df_train_md <- df_train %>%
+  mutate(TEAM_BATTING_SO =
+           ifelse(is.na(TEAM_BATTING_SO),
+                  train_medians[8],TEAM_BATTING_SO))%>%
+  mutate(TEAM_BASERUN_SB =
+           ifelse(is.na(TEAM_BASERUN_SB),
+                  train_medians[9], TEAM_BASERUN_SB))%>%
+  mutate(TEAM_BASERUN_CS =
+           ifelse(is.na(TEAM_BASERUN_CS),
+                  train_medians[10], TEAM_BASERUN_CS))%>%
+  mutate(TEAM_BATTING_HBP =
+           ifelse(is.na(TEAM_BATTING_HBP),
+                  train_medians[11],TEAM_BATTING_HBP))%>%
+  mutate(TEAM_PITCHING_SO =
+           ifelse(is.na(TEAM_PITCHING_SO),
+                  train_medians[15], TEAM_PITCHING_SO))%>%
+  mutate(TEAM_FIELDING_DP =
+           ifelse(is.na(TEAM_FIELDING_DP),
+                  train_medians[17], TEAM_FIELDING_DP))
 ```
 
-**Note:**
-
-          While deciding on whether to use 'Mean' or 'Median' both 
-          codes were generated. Unused replacement is left 
-          commented out, since only one can be applied at a time.
+#### **Replace NA values with 0**
 
 ```{r}
-skim(df_train)
+df_train_0 <- df_train %>%
+  replace_na(list(
+    INDEX = 0,
+    TARGET_WINS = 0,
+    TEAM_BATTING_H = 0,
+    TEAM_BATTING_2B = 0,
+    TEAM_BATTING_3B = 0,
+    TEAM_BATTING_HR = 0,
+    TEAM_BATTING_BB = 0,
+    TEAM_BATTING_SO = 0,
+    TEAM_BASERUN_SB = 0,
+    TEAM_BASERUN_CS = 0,
+    TEAM_BATTING_HBP = 0,
+    TEAM_PITCHING_H = 0,
+    TEAM_PITCHING_HR = 0,
+    TEAM_PITCHING_BB = 0,
+    TEAM_PITCHING_SO = 0,
+    TEAM_FIELDING_E = 0,
+    TEAM_FIELDING_DP = 0
+  ))
 ```
+
+
+```{r}
+print(skim(df_train_mn))
+```
+
+```{r}
+print(skim(df_train_md))
+```
+
+```{r}
+print(skim(df_train_0))
+```
+
+## **Models**
+
+```{r}
+model_initial <- lm(TARGET_WINS ~ TEAM_BATTING_H+TEAM_BATTING_2B +TEAM_BATTING_3B+TEAM_BATTING_HR+TEAM_BATTING_BB+TEAM_BATTING_SO+
+TEAM_BASERUN_SB+ TEAM_BASERUN_CS + TEAM_BATTING_HBP +TEAM_PITCHING_H+ TEAM_PITCHING_HR+TEAM_PITCHING_BB+TEAM_PITCHING_SO+TEAM_FIELDING_E+ TEAM_FIELDING_DP, data = df_train)
+
+summary(model_initial)
+```
+
+
 
 ### Reference
 
