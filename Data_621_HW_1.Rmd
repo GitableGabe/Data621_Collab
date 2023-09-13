@@ -110,7 +110,7 @@ df_evaluation <-
 ### **Review Data**
 
 
-```{r, out.width=".9\\paperwidth"}
+```{r}
 print(skim(df_train))
 ```
 
@@ -286,15 +286,15 @@ df_evaluation_rm<- na.omit(df_evaluation)
 
 
 ```{r}
-print(skim(df_train_mn))
+#print(skim(df_train_mn))
 ```
 
 ```{r}
-print(skim(df_train_md))
+#print(skim(df_train_md))
 ```
 
 ```{r}
-print(skim(df_train_0))
+#print(skim(df_train_0))
 ```
 
 ## **Models**
