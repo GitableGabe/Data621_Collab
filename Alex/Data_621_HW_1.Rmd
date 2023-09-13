@@ -14,6 +14,8 @@ library(tidyr)
 library(skimr)
 library(dplyr)
 library(knitr)
+library(ggplot2)
+library(corrplot)
 # Set so that long lines in R will be wrapped:
 opts_chunk$set(tidy.opts=list(width.cutoff=60),tidy=TRUE)
 ```
@@ -74,6 +76,7 @@ a. Mean / Standard Deviation / Median
 b. Bar Chart or Box Plot of the data
 c. Is the data correlated to the target variable (or to other variables?)
 d. Are any of the variables missing and need to be imputed “fixed”?
+
 2. **DATA PREPARATION (25 Points)**
 Describe how you have transformed the data by changing the original variables or creating new variables. If you did transform the data or create new variables, discuss why you did this. Here are some possible transformations.
 a. Fix missing values (maybe with a Mean or Median value)
@@ -81,10 +84,12 @@ b. Create flags to suggest if a variable was missing
 c. Transform data by putting it into buckets
 d. Mathematical transforms such as log or square root (or use Box-Cox)
 e. Combine variables (such as ratios or adding or multiplying) to create new variables
+
 3. **BUILD MODELS (25 Points)**
 Using the training data set, build at least three different multiple linear regression models, using different variables (or the same variables with different transformations). Since we have not yet covered automated variable selection methods, you should select the variables manually (unless you previously learned Forward or Stepwise selection, etc.). Since you manually selected a variable for inclusion into the model or exclusion into the model, indicate why this was done.
 Discuss the coefficients in the models, do they make sense? For example, if a team hits a lot of Home Runs, it would be reasonably expected that such a team would win more games. However, if the coefficient is negative
 (suggesting that the team would lose more games), then that needs to be discussed. Are you keeping the model even though it is counter intuitive? Why? The boss needs to know.
+
 4. **SELECT MODELS (25 Points)**
 Decide on the criteria for selecting the best multiple linear regression model. Will you select a model with slightly worse performance if it makes more sense or is more parsimonious? Discuss why you selected your model.
 For the multiple linear regression model, will you use a metric such as Adjusted R2
@@ -107,12 +112,25 @@ df_evaluation <-
   read.csv(paste0(git_url,"moneyball-evaluation-data.csv"))
 ```
 
-### **Review Data**
-
+### 1. Data Exploration**
 
 ```{r}
 print(skim(df_train))
 ```
+
+Histograms a good way to visualize the distributions of the original variables.
+```{r}
+df_train %>% 
+  gather(variable, value, TARGET_WINS: TEAM_FIELDING_DP)%>% #pivot longer to plot all variables
+  ggplot(.,aes(x=value)) + #plotting every variable
+  geom_density(fill = "darkgreen", alpha = 0.5) +
+  facet_wrap(~ variable, scales = "free", ncol = 4) +
+  theme_classic()
+```
+##### Initial Observations
+* The response variable __TARGET_WINS__ appears normally distributed
+* Several variables such as __TEAM_BATTING_SO__ appear to be bimodal, which may resolve after the missing data is dealt with 
+* Other variables like __TEAM_PITCHING_H__ appear to be skewed far left and may present a challenge unless imputation of missing values corrects this
 
 #### **Get the Means of columns in Data**
 
@@ -135,6 +153,7 @@ eval_medians<-sapply(df_evaluation, function(x) round(median(x, na.rm = TRUE)))
 eval_medians
 ```
 #### **Replace NA values in columns with their respective Mean**
+Made new copies of Train and Evaluation datasets, with imputed means.
 
 ```{r}
 # Replace NA values in 'column_name' with 'mean'
@@ -160,6 +179,20 @@ df_train_mn <- df_train %>%
 ```
 
 ```{r}
+df_train_mn %>% 
+  gather(variable, value, TARGET_WINS: TEAM_FIELDING_DP)%>% #pivot longer to plot all variables
+  ggplot(.,aes(x=value)) + #plotting every variable
+  geom_density(fill = "darkgreen", alpha = 0.5) +
+  facet_wrap(~ variable, scales = "free", ncol = 4) +
+  theme_classic()
+```
+##### Observations after imputation with the mean
+* The response variable __TARGET_WINS__ still appears normally distributed
+* The bimodality of the __TEAM_BATTING__ variables is largely unresolved
+* The far left skew of the __TEAM_PITCHING__  variables is largely unresolved  
+
+
+```{r}
 df_evaluation_mn <- df_evaluation %>%
   mutate(TEAM_BATTING_SO =
            ifelse(is.na(TEAM_BATTING_SO),
@@ -183,7 +216,7 @@ df_evaluation_mn <- df_evaluation %>%
 
 
 #### **Replace NA values with their respective Medians**
-
+Made new copies of Train and Evaluation datasets, with imputed median.
 ```{r}
 # Replace NA values in 'column_name' with 'median'
 df_train_md <- df_train %>%
@@ -206,6 +239,21 @@ df_train_md <- df_train %>%
            ifelse(is.na(TEAM_FIELDING_DP),
                   train_medians[17], TEAM_FIELDING_DP))
 ```
+
+
+```{r}
+df_train_md %>% 
+  gather(variable, value, TARGET_WINS: TEAM_FIELDING_DP)%>% #pivot longer to plot all variables
+  ggplot(.,aes(x=value)) + #plotting every variable
+  geom_density(fill = "darkgreen", alpha = 0.5) +
+  facet_wrap(~ variable, scales = "free", ncol = 4) +
+  theme_classic()
+```
+
+##### Observations after imputation with the median
+* The response variable __TARGET_WINS__ still appears normally distributed
+* The bimodality of the __TEAM_BATTING__ variables is largely unresolved
+* The far left skew of the __TEAM_PITCHING__  variables is largely unresolved  
 
 ```{r}
 df_evaluation_md <- df_evaluation %>%
@@ -230,7 +278,7 @@ df_evaluation_md <- df_evaluation %>%
 ```
 
 #### **Replace NA values with 0**
-
+Made new copies of Train and Evaluation datasets, with imputed zeros.
 ```{r}
 df_train_0 <- df_train %>%
   replace_na(list(
@@ -253,6 +301,19 @@ df_train_0 <- df_train %>%
     TEAM_FIELDING_DP = 0
   ))
 ```
+
+
+```{r}
+df_train_0 %>% 
+  gather(variable, value, TARGET_WINS: TEAM_FIELDING_DP)%>% #pivot longer to plot all variables
+  ggplot(.,aes(x=value)) + #plotting every variable
+  geom_density(fill = "darkgreen", alpha = 0.5) +
+  facet_wrap(~ variable, scales = "free", ncol = 4) +
+  theme_classic()
+```
+
+##### Observations after imputation with the zero
+* Imputation with zero is a poor choice as it introduces strong peaks to the left of the distribution of many variables such as __TEAM_FIELDING_DP__ 
 
 ```{r}
 df_evaluation_0 <- df_evaluation %>%
@@ -284,6 +345,18 @@ df_train_rm<- na.omit(df_train)
 df_evaluation_rm<- na.omit(df_evaluation)
 ```
 
+```{r}
+df_train_rm %>% 
+  gather(variable, value, TARGET_WINS: TEAM_FIELDING_DP)%>% #pivot longer to plot all variables
+  ggplot(.,aes(x=value)) + #plotting every variable
+  geom_density(fill = "darkgreen", alpha = 0.5) +
+  facet_wrap(~ variable, scales = "free", ncol = 4) +
+  theme_classic()
+```
+##### Observations after removal of missing data
+* Although removal of missing data resolves the distributions of many variables, the sample size is reduced to under 10% of the original dataset from 2276 observations to only 191 observations in the training dataset
+
+##### Given the loss of data with the removal of missing data, the most appropriet imputation is the mean and we should proceed with that method
 
 ```{r}
 #print(skim(df_train_mn))
@@ -296,6 +369,34 @@ df_evaluation_rm<- na.omit(df_evaluation)
 ```{r}
 #print(skim(df_train_0))
 ```
+
+#### Correlation with response variable
+
+```{r}
+df_train_mn %>% 
+  gather(variable, value, TEAM_BATTING_H: TEAM_FIELDING_DP)%>% #pivot longer to plot all variables
+  ggplot(.,aes(x=value, y=TARGET_WINS)) + #plotting every variable
+  geom_point(color = "grey", alpha = 0.5) +
+  geom_smooth(method = "lm", se = FALSE, color = "darkgreen") +
+  facet_wrap(~ variable, scales = "free", ncol = 4) +
+  theme_classic()
+```
+##### Observations about correlations with TARGET_WINS
+* None of the variable appear very strongly correlated with __TARGET_WINS__, but some the __TEAM_PITCHING__ variable have modest correlation
+* Team batting variables appear to have no correlation with __TARGET_WINS__, with the exception of __TEAM_BATTING_H__ which has a modest positive correlation with wins
+
+#### Checking for multicollinearity 
+
+```{r}
+df_train_mn %>% 
+ select(-INDEX) %>% 
+  cor(.,) %>% 
+  corrplot(.,method = "ellipse", type = "lower", diag = FALSE)
+```
+##### Observations about correlations with TARGET_WINS
+* The correlogram confirms that none of the variable are very strongly correlated with __TARGET_WINS__, with the exception of __TEAM_BATTING_H__ which has a modest positive correlation with wins
+* Strong multicollinearity is seen between the following variable which needs to be taken into consideration when constructing the models: __TEAM_FIELDING_E__, __TEAM_PITCHING_HR__, __TEAM_BATTING_3B__, __TEAM_BATTING_HR__
+* It may also not be advisable to include __TEAM_BATTING_HBP__ in the model because it has no correlation with wins or any other variable in the dataset
 
 ## **Models**
 
