@@ -399,7 +399,7 @@ df_train_mn %>%
 * It may also not be advisable to include __TEAM_BATTING_HBP__ in the model because it has no correlation with wins or any other variable in the dataset
 
 ## **Models**
-
+#Test Model
 ```{r}
 model_initial <- lm(TARGET_WINS ~ TEAM_BATTING_H+TEAM_BATTING_2B +TEAM_BATTING_3B+TEAM_BATTING_HR+TEAM_BATTING_BB+TEAM_BATTING_SO+
 TEAM_BASERUN_SB+ TEAM_BASERUN_CS + TEAM_BATTING_HBP +TEAM_PITCHING_H+ TEAM_PITCHING_HR+TEAM_PITCHING_BB+TEAM_PITCHING_SO+TEAM_FIELDING_E+ TEAM_FIELDING_DP, data = df_train)
@@ -407,6 +407,100 @@ TEAM_BASERUN_SB+ TEAM_BASERUN_CS + TEAM_BATTING_HBP +TEAM_PITCHING_H+ TEAM_PITCH
 summary(model_initial)
 ```
 
+
+To determine how to handle missing variables, we created four different datasets. We imputed missing values with the mean, median, and zero, and also removed the missing values altogether.
+
+Afterwards, we constructed linear models using these four datasets to determine which model had the best adjusted R-squared value.
+
+```{r}
+# Fit a multiple linear regression model using lm with variables imputed:mean
+model_mn <- lm(TARGET_WINS ~ ., data = df_train_mn)
+
+# Summary of the regression model
+summary(model_mn)$adj.r.squared
+```
+
+```{r}
+# Fit a multiple linear regression model using lm with variables imputed:median
+model_md <- lm(TARGET_WINS ~ ., data = df_train_md)
+
+# Summary of the regression model
+summary(model_md)$adj.r.squared
+```
+```{r}
+# Fit a multiple linear regression model using lm with variables imputed:zero
+model_0 <- lm(TARGET_WINS ~ ., data = df_train_0)
+
+# Summary of the regression model
+summary(model_0)$adj.r.squared
+```
+```{r}
+# Fit a multiple linear regression model using lm with variables: removed
+model_rm <- lm(TARGET_WINS ~ ., data = df_train_rm)
+
+# Summary of the regression model
+summary(model_rm)$adj.r.squared
+```
+By removing the missing variables, we observed a more favorable adjusted R-squared value, indicating an improvement. Therefore, the missing variables have been successfully removed.
+
+Next, we checked the Pearson correlation values of the chosen model to identify which independent variables correlate best with our dependent variable (TARGET_WINS).
+
+```{r}
+# Create a subset that includes all columns
+all_columns_subset <- df_train_rm[, ]
+
+kdepairs(all_columns_subset)
+```
+
+When examining the correlations, we observed some multicollinearity among the following variables:
+
+TEAM_BATTING_H and TEAM_PITCHING_H
+TEAM_BATTING_HR and TEAM_PITCHING_HR
+TEAM_BATTING_BB and TEAM_PITCHING_BB
+TEAM_BATTING_SO and TEAM_PITCHING_SO
+
+Due to the high correlation between these variables, we made the decision to combine them into single variables through addition.
+
+```{r}
+#Also tried to minus it as well. Did not work.(delete later)
+#Creating new data set with combined correlated variables and removed correlated variables 
+df_train_with_combo <- df_train_rm %>%
+  mutate(team_H = TEAM_BATTING_H + TEAM_PITCHING_H,
+         team_HR = TEAM_BATTING_HR + TEAM_PITCHING_HR,
+         team_BB = TEAM_BATTING_BB + TEAM_PITCHING_BB,
+         team_SO = TEAM_BATTING_SO + TEAM_PITCHING_SO)%>%
+  select(-TEAM_BATTING_H, -TEAM_PITCHING_H, -TEAM_BATTING_HR, -TEAM_PITCHING_HR, -TEAM_BATTING_BB,-TEAM_PITCHING_BB,
+         -TEAM_BATTING_SO,- TEAM_PITCHING_SO)
+```
+
+Testing this new data set
+```{r}
+# Fit a multiple linear regression model using lm with variables: removed
+model_combo <- lm(TARGET_WINS ~ ., data = df_train_with_combo)
+
+# Summary of the regression model
+summary(model_combo)$adj.r.squared
+```
+It led to a slight improvement in the model from 0.5089872.
+
+Let's redo the correlations to select the most highly correlated variables.
+
+```{r}
+# Create a subset that includes all columns
+all_columns_subset <- df_train_with_combo[, ]
+
+kdepairs(all_columns_subset)
+```
+
+After identifying the highest correlation values and manually reviewing the variables, the best model produced without any transformation is as follows:
+
+```{r}
+model <- lm(TARGET_WINS ~ team_H + team_BB + TEAM_FIELDING_E +TEAM_FIELDING_DP+ team_SO+ team_HR+ TEAM_BATTING_HBP+ TEAM_BATTING_3B +TEAM_BASERUN_SB, data = df_train_with_combo)
+
+summary(model)
+```
+
+## **Transformations**
 
 
 ### Reference
