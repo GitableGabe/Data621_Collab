@@ -18,6 +18,9 @@ library(ggplot2)
 library(corrplot)
 # Set so that long lines in R will be wrapped:
 opts_chunk$set(tidy.opts=list(width.cutoff=60),tidy=TRUE)
+
+#Added library for kdepairs
+library(ResourceSelection)
 ```
 
 # **Business Analytics and Data Mining**
@@ -388,10 +391,10 @@ df_train_mn %>%
 #### Checking for multicollinearity 
 
 ```{r}
-df_train_mn %>% 
- select(-INDEX) %>% 
-  cor(.,) %>% 
-  corrplot(.,method = "ellipse", type = "lower", diag = FALSE)
+# df_train_mn %>% 
+#  select(-INDEX) %>% 
+#   cor(.,) %>% 
+#   corrplot(.,method = "ellipse", type = "lower", diag = FALSE)
 ```
 ##### Observations about correlations with TARGET_WINS
 * The correlogram confirms that none of the variable are very strongly correlated with __TARGET_WINS__, with the exception of __TEAM_BATTING_H__ which has a modest positive correlation with wins
