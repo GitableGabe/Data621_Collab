@@ -2,11 +2,11 @@
 title: "DATA 621 HW 1"
 date: "Last edited `r format(Sys.time(), '%B %d, %Y')`"
 output:
-  pdf_document:
-    latex_engine: xelatex
-  geometry: "left=0.5cm,right=0.5cm,top=1cm,bottom=2cm"
   html_document:
     df_print: paged
+  geometry: "left=0.5cm,right=0.5cm,top=1cm,bottom=2cm"
+  pdf_document:
+    latex_engine: xelatex
 ---
 
 ```{r, echo=FALSE, message=FALSE}
@@ -410,6 +410,16 @@ TEAM_BASERUN_SB+ TEAM_BASERUN_CS + TEAM_BATTING_HBP +TEAM_PITCHING_H+ TEAM_PITCH
 summary(model_initial)
 ```
 
+### DIAGNOSTIC PLOTS FOR THE FULL MODEL ON ORIGINAL TRAINING DATA
+
+```{r}
+plot(model_initial)
+```
+
+
+
+
+
 
 To determine how to handle missing variables, we created four different datasets. We imputed missing values with the mean, median, and zero, and also removed the missing values altogether.
 
@@ -501,6 +511,66 @@ After identifying the highest correlation values and manually reviewing the vari
 model <- lm(TARGET_WINS ~ team_H + team_BB + TEAM_FIELDING_E +TEAM_FIELDING_DP+ team_SO+ team_HR+ TEAM_BATTING_HBP+ TEAM_BATTING_3B +TEAM_BASERUN_SB, data = df_train_with_combo)
 
 summary(model)
+```
+### DIAGNOSTIC PLOTS OF FINAL MODEL
+
+```{r}
+plot(model)
+```
+
+### BIVARIATE PLOTS OF WINS BY SIGNIFICANT PREDICTORS
+
+```{r, warning=FALSE, message=FALSE}
+p1 <- df_train_with_combo %>% 
+  ggplot(aes(y=TARGET_WINS, x=team_H)) +
+  geom_point(color="darkgreen") +
+  geom_smooth(method = "lm", se=TRUE) +
+  labs(title = "WINS BY TEAM H (COMBINED)",
+       x="TEAM H (COMBINED)", y="WINS") +
+  theme_bw()
+
+p2 <- df_train_with_combo %>% 
+  ggplot(aes(y=TARGET_WINS, x=team_BB)) +
+  geom_point(color="darkgreen") +
+  geom_smooth(method = "lm", se=TRUE) +
+  labs(title = "WINS BY TEAM BB (COMBINED)",
+       x="TEAM BB (COMBINED)", y="WINS") +
+  theme_bw()
+
+p3 <- df_train_with_combo %>% 
+  ggplot(aes(y=TARGET_WINS, x=team_SO)) +
+  geom_point(color="darkgreen") +
+  geom_smooth(method = "lm", se=TRUE) +
+  labs(title = "WINS BY TEAM SO (COMBINED)",
+       x="TEAM SO (COMBINED)", y="WINS") +
+  theme_bw()
+
+p4 <- df_train_with_combo %>% 
+  ggplot(aes(y=TARGET_WINS, x=team_HR)) +
+  geom_point(color="darkgreen") +
+  geom_smooth(method = "lm", se=TRUE) +
+  labs(title = "WINS BY TEAM HR (COMBINED)",
+       x="TEAM HR (COMBINED)", y="WINS") +
+  theme_bw()
+
+p5 <- df_train_with_combo %>% 
+  ggplot(aes(y=TARGET_WINS, x=TEAM_FIELDING_E)) +
+  geom_point(color="darkgreen") +
+  geom_smooth(method = "lm", se=TRUE) +
+  labs(title = "WINS BY TEAM FIELDING E",
+       x="TEAM FIELDING E", y="WINS") +
+  theme_bw()
+
+p6 <- df_train_with_combo %>% 
+  ggplot(aes(y=TARGET_WINS, x=TEAM_FIELDING_DP)) +
+  geom_point(color="darkgreen") +
+  geom_smooth(method = "lm", se=TRUE) +
+  labs(title = "WINS BY TEAM FIELDING DP",
+       x="TEAM FIELDING DP", y="WINS") +
+  theme_bw()
+
+library(gridExtra)
+grid.arrange(p1, p2, p3, p4, p5, p6, nrow=3)
 ```
 
 ## **Transformations**
