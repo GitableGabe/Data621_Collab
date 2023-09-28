@@ -114,13 +114,33 @@
 
 \title{DATA 621 HW 1}
 \author{}
-\date{\vspace{-2.5em}Last edited September 14, 2023}
+\date{\vspace{-2.5em}Last edited September 26, 2023}
 
 \begin{document}
 \maketitle
 
 \begin{verbatim}
+## Warning: package 'tidyr' was built under R version 4.2.3
+\end{verbatim}
+
+\begin{verbatim}
+## Warning: package 'dplyr' was built under R version 4.2.3
+\end{verbatim}
+
+\begin{verbatim}
+## Warning: package 'knitr' was built under R version 4.2.3
+\end{verbatim}
+
+\begin{verbatim}
+## Warning: package 'ggplot2' was built under R version 4.2.3
+\end{verbatim}
+
+\begin{verbatim}
 ## Warning: package 'corrplot' was built under R version 4.2.3
+\end{verbatim}
+
+\begin{verbatim}
+## Warning: package 'ResourceSelection' was built under R version 4.2.3
 \end{verbatim}
 
 \hypertarget{business-analytics-and-data-mining}{%
@@ -810,27 +830,39 @@ multicollinearity}\label{checking-for-multicollinearity}}
 
 \begin{Shaded}
 \begin{Highlighting}[]
-\NormalTok{df\_train\_mn }\SpecialCharTok{\%\textgreater{}\%} 
- \FunctionTok{select}\NormalTok{(}\SpecialCharTok{{-}}\NormalTok{INDEX) }\SpecialCharTok{\%\textgreater{}\%} 
-  \FunctionTok{cor}\NormalTok{(.,) }\SpecialCharTok{\%\textgreater{}\%} 
-  \FunctionTok{corrplot}\NormalTok{(.,}\AttributeTok{method =} \StringTok{"ellipse"}\NormalTok{, }\AttributeTok{type =} \StringTok{"lower"}\NormalTok{, }\AttributeTok{diag =} \ConstantTok{FALSE}\NormalTok{)}
+\CommentTok{\# df\_train\_mn \%\textgreater{}\% }
+\CommentTok{\#  select({-}INDEX) \%\textgreater{}\% }
+\CommentTok{\#   cor(.,) \%\textgreater{}\% }
+\CommentTok{\#   corrplot(.,method = "ellipse", type = "lower", diag = FALSE)}
 \end{Highlighting}
 \end{Shaded}
 
-\includegraphics{Data_621_HW_1_files/figure-latex/unnamed-chunk-24-1.pdf}
-\#\#\#\#\# Observations about correlations with TARGET\_WINS * The
-correlogram confirms that none of the variable are very strongly
-correlated with \textbf{TARGET\_WINS}, with the exception of
-\textbf{TEAM\_BATTING\_H} which has a modest positive correlation with
-wins * Strong multicollinearity is seen between the following variable
-which needs to be taken into consideration when constructing the models:
-\textbf{TEAM\_FIELDING\_E}, \textbf{TEAM\_PITCHING\_HR},
-\textbf{TEAM\_BATTING\_3B}, \textbf{TEAM\_BATTING\_HR} * It may also not
-be advisable to include \textbf{TEAM\_BATTING\_HBP} in the model because
-it has no correlation with wins or any other variable in the dataset
+\hypertarget{observations-about-correlations-with-target_wins}{%
+\subparagraph{Observations about correlations with
+TARGET\_WINS}\label{observations-about-correlations-with-target_wins}}
+
+\begin{itemize}
+\tightlist
+\item
+  The correlogram confirms that none of the variable are very strongly
+  correlated with \textbf{TARGET\_WINS}, with the exception of
+  \textbf{TEAM\_BATTING\_H} which has a modest positive correlation with
+  wins
+\item
+  Strong multicollinearity is seen between the following variable which
+  needs to be taken into consideration when constructing the models:
+  \textbf{TEAM\_FIELDING\_E}, \textbf{TEAM\_PITCHING\_HR},
+  \textbf{TEAM\_BATTING\_3B}, \textbf{TEAM\_BATTING\_HR}
+\item
+  It may also not be advisable to include \textbf{TEAM\_BATTING\_HBP} in
+  the model because it has no correlation with wins or any other
+  variable in the dataset
+\end{itemize}
 
 \hypertarget{models}{%
 \subsection{\texorpdfstring{\textbf{Models}}{Models}}\label{models}}
+
+\#Test Model
 
 \begin{Shaded}
 \begin{Highlighting}[]
@@ -880,6 +912,254 @@ it has no correlation with wins or any other variable in the dataset
 ## Multiple R-squared:  0.5501, Adjusted R-squared:  0.5116 
 ## F-statistic: 14.27 on 15 and 175 DF,  p-value: < 2.2e-16
 \end{verbatim}
+
+To determine how to handle missing variables, we created four different
+datasets. We imputed missing values with the mean, median, and zero, and
+also removed the missing values altogether.
+
+Afterwards, we constructed linear models using these four datasets to
+determine which model had the best adjusted R-squared value.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Fit a multiple linear regression model using lm with variables imputed:mean}
+\NormalTok{model\_mn }\OtherTok{\textless{}{-}} \FunctionTok{lm}\NormalTok{(TARGET\_WINS }\SpecialCharTok{\textasciitilde{}}\NormalTok{ ., }\AttributeTok{data =}\NormalTok{ df\_train\_mn)}
+
+\CommentTok{\# Summary of the regression model}
+\FunctionTok{summary}\NormalTok{(model\_mn)}\SpecialCharTok{$}\NormalTok{adj.r.squared}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 0.3148773
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Fit a multiple linear regression model using lm with variables imputed:median}
+\NormalTok{model\_md }\OtherTok{\textless{}{-}} \FunctionTok{lm}\NormalTok{(TARGET\_WINS }\SpecialCharTok{\textasciitilde{}}\NormalTok{ ., }\AttributeTok{data =}\NormalTok{ df\_train\_md)}
+
+\CommentTok{\# Summary of the regression model}
+\FunctionTok{summary}\NormalTok{(model\_md)}\SpecialCharTok{$}\NormalTok{adj.r.squared}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 0.3111035
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Fit a multiple linear regression model using lm with variables imputed:zero}
+\NormalTok{model\_0 }\OtherTok{\textless{}{-}} \FunctionTok{lm}\NormalTok{(TARGET\_WINS }\SpecialCharTok{\textasciitilde{}}\NormalTok{ ., }\AttributeTok{data =}\NormalTok{ df\_train\_0)}
+
+\CommentTok{\# Summary of the regression model}
+\FunctionTok{summary}\NormalTok{(model\_0)}\SpecialCharTok{$}\NormalTok{adj.r.squared}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 0.2942964
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Fit a multiple linear regression model using lm with variables: removed}
+\NormalTok{model\_rm }\OtherTok{\textless{}{-}} \FunctionTok{lm}\NormalTok{(TARGET\_WINS }\SpecialCharTok{\textasciitilde{}}\NormalTok{ ., }\AttributeTok{data =}\NormalTok{ df\_train\_rm)}
+
+\CommentTok{\# Summary of the regression model}
+\FunctionTok{summary}\NormalTok{(model\_rm)}\SpecialCharTok{$}\NormalTok{adj.r.squared}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 0.5089872
+\end{verbatim}
+
+By removing the missing variables, we observed a more favorable adjusted
+R-squared value, indicating an improvement. Therefore, the missing
+variables have been successfully removed.
+
+Next, we checked the Pearson correlation values of the chosen model to
+identify which independent variables correlate best with our dependent
+variable (TARGET\_WINS).
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Create a subset that includes all columns}
+\NormalTok{all\_columns\_subset }\OtherTok{\textless{}{-}}\NormalTok{ df\_train\_rm[, ]}
+
+\FunctionTok{kdepairs}\NormalTok{(all\_columns\_subset)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Warning in par(usr): argument 1 does not name a graphical parameter
+
+## Warning in par(usr): argument 1 does not name a graphical parameter
+
+## Warning in par(usr): argument 1 does not name a graphical parameter
+
+## Warning in par(usr): argument 1 does not name a graphical parameter
+
+## Warning in par(usr): argument 1 does not name a graphical parameter
+
+## Warning in par(usr): argument 1 does not name a graphical parameter
+
+## Warning in par(usr): argument 1 does not name a graphical parameter
+
+## Warning in par(usr): argument 1 does not name a graphical parameter
+
+## Warning in par(usr): argument 1 does not name a graphical parameter
+
+## Warning in par(usr): argument 1 does not name a graphical parameter
+
+## Warning in par(usr): argument 1 does not name a graphical parameter
+
+## Warning in par(usr): argument 1 does not name a graphical parameter
+
+## Warning in par(usr): argument 1 does not name a graphical parameter
+
+## Warning in par(usr): argument 1 does not name a graphical parameter
+
+## Warning in par(usr): argument 1 does not name a graphical parameter
+
+## Warning in par(usr): argument 1 does not name a graphical parameter
+
+## Warning in par(usr): argument 1 does not name a graphical parameter
+\end{verbatim}
+
+\includegraphics{Data_621_HW_1_files/figure-latex/unnamed-chunk-30-1.pdf}
+
+When examining the correlations, we observed some multicollinearity
+among the following variables:
+
+TEAM\_BATTING\_H and TEAM\_PITCHING\_H TEAM\_BATTING\_HR and
+TEAM\_PITCHING\_HR TEAM\_BATTING\_BB and TEAM\_PITCHING\_BB
+TEAM\_BATTING\_SO and TEAM\_PITCHING\_SO
+
+Due to the high correlation between these variables, we made the
+decision to combine them into single variables through addition.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\#Also tried to minus it as well. Did not work.(delete later)}
+\CommentTok{\#Creating new data set with combined correlated variables and removed correlated variables }
+\NormalTok{df\_train\_with\_combo }\OtherTok{\textless{}{-}}\NormalTok{ df\_train\_rm }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{mutate}\NormalTok{(}\AttributeTok{team\_H =}\NormalTok{ TEAM\_BATTING\_H }\SpecialCharTok{+}\NormalTok{ TEAM\_PITCHING\_H,}
+         \AttributeTok{team\_HR =}\NormalTok{ TEAM\_BATTING\_HR }\SpecialCharTok{+}\NormalTok{ TEAM\_PITCHING\_HR,}
+         \AttributeTok{team\_BB =}\NormalTok{ TEAM\_BATTING\_BB }\SpecialCharTok{+}\NormalTok{ TEAM\_PITCHING\_BB,}
+         \AttributeTok{team\_SO =}\NormalTok{ TEAM\_BATTING\_SO }\SpecialCharTok{+}\NormalTok{ TEAM\_PITCHING\_SO)}\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{select}\NormalTok{(}\SpecialCharTok{{-}}\NormalTok{TEAM\_BATTING\_H, }\SpecialCharTok{{-}}\NormalTok{TEAM\_PITCHING\_H, }\SpecialCharTok{{-}}\NormalTok{TEAM\_BATTING\_HR, }\SpecialCharTok{{-}}\NormalTok{TEAM\_PITCHING\_HR, }\SpecialCharTok{{-}}\NormalTok{TEAM\_BATTING\_BB,}\SpecialCharTok{{-}}\NormalTok{TEAM\_PITCHING\_BB,}
+         \SpecialCharTok{{-}}\NormalTok{TEAM\_BATTING\_SO,}\SpecialCharTok{{-}}\NormalTok{ TEAM\_PITCHING\_SO)}
+\end{Highlighting}
+\end{Shaded}
+
+Testing this new data set
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Fit a multiple linear regression model using lm with variables: removed}
+\NormalTok{model\_combo }\OtherTok{\textless{}{-}} \FunctionTok{lm}\NormalTok{(TARGET\_WINS }\SpecialCharTok{\textasciitilde{}}\NormalTok{ ., }\AttributeTok{data =}\NormalTok{ df\_train\_with\_combo)}
+
+\CommentTok{\# Summary of the regression model}
+\FunctionTok{summary}\NormalTok{(model\_combo)}\SpecialCharTok{$}\NormalTok{adj.r.squared}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 0.5146459
+\end{verbatim}
+
+It led to a slight improvement in the model from 0.5089872.
+
+Let's redo the correlations to select the most highly correlated
+variables.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Create a subset that includes all columns}
+\NormalTok{all\_columns\_subset }\OtherTok{\textless{}{-}}\NormalTok{ df\_train\_with\_combo[, ]}
+
+\FunctionTok{kdepairs}\NormalTok{(all\_columns\_subset)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Warning in par(usr): argument 1 does not name a graphical parameter
+
+## Warning in par(usr): argument 1 does not name a graphical parameter
+
+## Warning in par(usr): argument 1 does not name a graphical parameter
+
+## Warning in par(usr): argument 1 does not name a graphical parameter
+
+## Warning in par(usr): argument 1 does not name a graphical parameter
+
+## Warning in par(usr): argument 1 does not name a graphical parameter
+
+## Warning in par(usr): argument 1 does not name a graphical parameter
+
+## Warning in par(usr): argument 1 does not name a graphical parameter
+
+## Warning in par(usr): argument 1 does not name a graphical parameter
+
+## Warning in par(usr): argument 1 does not name a graphical parameter
+
+## Warning in par(usr): argument 1 does not name a graphical parameter
+
+## Warning in par(usr): argument 1 does not name a graphical parameter
+
+## Warning in par(usr): argument 1 does not name a graphical parameter
+\end{verbatim}
+
+\includegraphics{Data_621_HW_1_files/figure-latex/unnamed-chunk-33-1.pdf}
+
+After identifying the highest correlation values and manually reviewing
+the variables, the best model produced without any transformation is as
+follows:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{model }\OtherTok{\textless{}{-}} \FunctionTok{lm}\NormalTok{(TARGET\_WINS }\SpecialCharTok{\textasciitilde{}}\NormalTok{ team\_H }\SpecialCharTok{+}\NormalTok{ team\_BB }\SpecialCharTok{+}\NormalTok{ TEAM\_FIELDING\_E }\SpecialCharTok{+}\NormalTok{TEAM\_FIELDING\_DP}\SpecialCharTok{+}\NormalTok{ team\_SO}\SpecialCharTok{+}\NormalTok{ team\_HR}\SpecialCharTok{+}\NormalTok{ TEAM\_BATTING\_HBP}\SpecialCharTok{+}\NormalTok{ TEAM\_BATTING\_3B }\SpecialCharTok{+}\NormalTok{TEAM\_BASERUN\_SB, }\AttributeTok{data =}\NormalTok{ df\_train\_with\_combo)}
+
+\FunctionTok{summary}\NormalTok{(model)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+## Call:
+## lm(formula = TARGET_WINS ~ team_H + team_BB + TEAM_FIELDING_E + 
+##     TEAM_FIELDING_DP + team_SO + team_HR + TEAM_BATTING_HBP + 
+##     TEAM_BATTING_3B + TEAM_BASERUN_SB, data = df_train_with_combo)
+## 
+## Residuals:
+##      Min       1Q   Median       3Q      Max 
+## -20.7465  -5.6877   0.0659   4.8657  22.5430 
+## 
+## Coefficients:
+##                   Estimate Std. Error t value Pr(>|t|)    
+## (Intercept)      57.596453  19.129457   3.011 0.002977 ** 
+## team_H            0.014172   0.005371   2.639 0.009051 ** 
+## team_BB           0.027383   0.004732   5.787 3.10e-08 ***
+## TEAM_FIELDING_E  -0.177012   0.039717  -4.457 1.45e-05 ***
+## TEAM_FIELDING_DP -0.106207   0.035731  -2.972 0.003357 ** 
+## team_SO          -0.015415   0.003634  -4.241 3.54e-05 ***
+## team_HR           0.043523   0.012576   3.461 0.000672 ***
+## TEAM_BATTING_HBP  0.079448   0.048856   1.626 0.105652    
+## TEAM_BATTING_3B  -0.112980   0.075511  -1.496 0.136345    
+## TEAM_BASERUN_SB   0.026802   0.021510   1.246 0.214360    
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 8.388 on 181 degrees of freedom
+## Multiple R-squared:  0.5433, Adjusted R-squared:  0.5206 
+## F-statistic: 23.93 on 9 and 181 DF,  p-value: < 2.2e-16
+\end{verbatim}
+
+\hypertarget{transformations}{%
+\subsection{\texorpdfstring{\textbf{Transformations}}{Transformations}}\label{transformations}}
 
 \hypertarget{reference}{%
 \subsubsection{Reference}\label{reference}}
