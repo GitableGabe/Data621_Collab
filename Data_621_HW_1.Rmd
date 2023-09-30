@@ -1,12 +1,13 @@
 ---
 title: "DATA 621 HW 1"
 date: "Last edited `r format(Sys.time(), '%B %d, %Y')`"
+author: "Alex Khaykin, Melissa Bowman, Gabriel Campos, Jen Abinette"
 output:
-  html_document:
-    df_print: paged
-  geometry: "left=0.5cm,right=0.5cm,top=1cm,bottom=2cm"
   pdf_document:
     latex_engine: xelatex
+  geometry: "left=0.5cm,right=0.5cm,top=1cm,bottom=2cm"
+  html_document:
+    df_print: paged
 ---
 
 ```{r, echo=FALSE, message=FALSE}
