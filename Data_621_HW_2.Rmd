@@ -98,8 +98,15 @@ compare with your own functions?
 
 # Data Exploration
 
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+library(dplyr)
+library(tidyr)
+library(caret)
+```
+
+
 ## **Load the data**
-```{r}
+```{r data-import}
 git_url<-
   "https://raw.githubusercontent.com/GitableGabe/Data621_Data/main/"
 
@@ -108,7 +115,16 @@ df_classif <-
 head(df_classif,n=10)
 
 ```
+## **Confusion Matrix**
 
+```{r ls-variables}
+ls_class<-factor(df_classif$class)
+ls_scr_class<-factor(df_classif$scored.class)
+ls_sr_prb<-df_classif$scored.probability
+```
 
+```{r confusion-matrix}
+(example<-confusionMatrix(data=ls_scr_class, reference = ls_class))
+```
 
 
