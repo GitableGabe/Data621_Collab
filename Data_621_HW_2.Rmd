@@ -127,4 +127,59 @@ ls_sr_prb<-df_classif$scored.probability
 (example<-confusionMatrix(data=ls_scr_class, reference = ls_class))
 ```
 
+```{r}
+(confusion_matrix <- table(ls_class,ls_scr_class))
+```
+True Positive
+```{r}
+(tp <- confusion_matrix[1, 1])
+```
+True Negative
+```{r}
+(tn <- confusion_matrix[2, 2])
+```
+
+False Positive
+```{r}
+(fp <- confusion_matrix[1, 2])
+```
+False Negative
+```{r}
+(fn <- confusion_matrix[2, 1])
+```
+
+# Accuracy Function
+```{r}
+(accuracy <- (tp + tn)/(tp + fp + tn + fn))
+```
+
+# Classification Error Rate Function
+```{r}
+(classification_error_rate <- (fp + fn)/(tp + fp + tn + fn))
+```
+
+# Verify that you get an accuracy and an error rate that sums to one.
+```{r}
+(accuracy + classification_error_rate)
+```
+
+# Precision Function
+```{r}
+(precision <- tp/(tp + fp))
+```
+
+# Sensitivity Function
+```{r}
+(sensitivity <- tp/(tp + fn))
+```
+
+# Specificity Function
+```{r}
+(specificity <- tn/(tn + fp))
+```
+
+# F1 score Function
+```{r}
+(f1_score <- (2 * precision * sensitivity)/(precision * sensitivity))
+```
 
