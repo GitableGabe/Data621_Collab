@@ -179,5 +179,5 @@ False Negative
 ```
 # F1 score Function
 ```{r}
-(f1_score <- (2 * precision * sensitivity)/(precision * sensitivity))
+(f1_score <- (2 * precision * sensitivity)/(precision + sensitivity))
 ```
