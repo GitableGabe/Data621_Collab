@@ -155,7 +155,6 @@ False Negative
 (accuracy <- (tp + tn)/(tp + fp + tn + fn))
 ```
 # Classification Error Rate Function
-
 ```{r}
 (classification_error_rate <- (fp + fn)/(tp + fp + tn + fn))
 ```
