@@ -376,7 +376,7 @@ AUC_calc <- function (actual, predicted){
               "Tied"=tiesPercent, "AUC"=AUC))
 }
 
-AUC(ls_class, ls_scr_class)
+auc(as.numeric(actual), as.numeric(predicted))
 nrow(df_classif)
 ```
 
