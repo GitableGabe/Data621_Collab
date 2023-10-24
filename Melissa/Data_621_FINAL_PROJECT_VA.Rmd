@@ -1,0 +1,31 @@
+---
+title: "DATA 621:FINAL PROJECT"
+date: "Last edited `r format(Sys.time(), '%B %d, %Y')`"
+author: "Group 2 - Gabriel Campos, Melissa Bowman, Alexander Khaykin, & Jennifer Abinette"
+output:
+  pdf_document:
+    latex_engine: xelatex
+  geometry: "left=0.5cm,right=0.5cm,top=1cm,bottom=2cm"
+  html_document:
+    df_print: paged
+urlcolor: blue
+---
+
+
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(blsR)
+bls_set_key("92479268e6994036b7f4c28bf11d946c")
+```
+
+## Import Data using Bureau of Labor and Statitistics API
+
+```{r}
+cpi_load <- get_series_table("CUUR0000SA0",start_year=1997,end_year=2023)
+ui_load  <- get_series_table("LNS14000000",start_year=1997,end_year=2023)
+```
+
+[FBI API DATA](https://cde.ucr.cjis.gov/LATEST/webapp/#/pages/docApi)
+[FBI API request link](https://api.data.gov/signup/)
