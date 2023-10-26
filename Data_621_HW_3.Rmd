@@ -93,6 +93,12 @@ confusion matrix. Make predictions using the evaluation data set
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 library(dplyr)
 library(tidyr)
+library(tidyverse)
+library(ggplot2)
+library(GGally)
+library(Hmisc)
+library(corrplot)
+library(PerformanceAnalytics)
 ```
 
 
@@ -117,4 +123,49 @@ df_crime_train <-
 head(df_crime_train,n=10)
 ```
 
+## Pairwise correlation 
+Because all of the variable in the dataset are numeric, I can perform pairwise correlations to measure the strength of linearity among the variables in the training set.
+
+```{r}
+ggcorr(df_crime_train)
+```
+Correlation coefficients range from +1 to -1, where zero indicates no correlation. Initially, there appears to be modest to high correlations between the outcome _target_ and _tax_, _rad_, _age_, _dis_, _nox_, and _indus_. There also appears to be some possible collinearity among some of the variables.
+
+## Assessing multicollinearity
+From the above correlogram the variable we do not need to worry about for collinearity are _target_, _chas_, _ptratio_ and will not include them in the assessment for collinearity.
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+#ggpairs(df_crime_train, columns = c(1, 2, 4:9, 11, 12), aes(alpha = 0.5), diag = list(continuous = "blankDiag")) +
+  #theme_bw()
+#pairs(train[, c(1, 2, 4:9, 11, 12)], col = "darkgrey", gap = 0, cex.labels = 1.2)
+corrplot(cor(df_crime_train[, c(1, 2, 4:9, 11, 12)]), type = "lower")
+coll <- rcorr(round(cor(df_crime_train[, c(1, 2, 4:9, 11, 12)]), digits = 2))
+round(coll$P, digits = 3)
+#chart.Correlation(train[, c(1, 2, 4:9, 11, 12)], histogram = FALSE, lower.panel = NULL)
+```
+Unfortunately, each of these variable is significantly correlated with every other variable as evidenced of the matrix of p values. The correlogram suggests that _dis_ is most highly correlated with with other variables in the dataset followed by _lstat_ and _tax_.
+
+## Relationship of each predictor to the _target_.
+In order to best assess which predictors are likely to be informative and should thus be included in the full model to be tested we should also compare boxplots to look for predictors with low explanatory values.
+
+```{r}
+df_crime_train %>% 
+  pivot_longer(cols = !target, names_to = "predictor", values_to = "value") %>% 
+  ggplot(aes(x = as.factor(target), y = value, fill = as.factor(target))) + 
+  geom_boxplot(show.legend = FALSE) + 
+  xlab("target") +
+  facet_wrap(~predictor, scales = "free")
+```
+The predictors that may have low explanatory values with _target_ are _chas_ and _zn_. Even though this is the case, we should include both in the model because they are not as highly correlated with other predictors like some of the other.
+
+## Look for sample size differences between the two target groups
+
+```{r}
+df_crime_train %>% 
+  pivot_longer(cols = !target, names_to = "predictor", values_to = "value") %>% 
+  group_by(target) %>% 
+  count()
+```
+*** Full model should include all variable except lstat ***
+Swap out lstat if tax in the final model.
 
