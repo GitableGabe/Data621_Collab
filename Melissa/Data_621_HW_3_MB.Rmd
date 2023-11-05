@@ -93,6 +93,8 @@ confusion matrix. Make predictions using the evaluation data set
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 library(dplyr)
 library(tidyr)
+library(car)
+library(ggplot2)
 ```
 
 
@@ -112,9 +114,56 @@ head(df_crime_eval,n=10)
 ```
 
 ```{r}
+df_crime_eval
+```
+
+
+```{r}
 df_crime_train <- 
   read.csv(paste0(git_url,"crime-training-data_modified.csv"))
 head(df_crime_train,n=10)
 ```
 
+```{r}
+df_crime_train[is.na(df_crime_train)]
+```
+
+```{r}
+str(df_crime_train)
+```
+
+
+```{r}
+xtabs(~ target + medv ,  data = df_crime_train)
+```
+```{r}
+# Create a correlation matrix for all variables
+(cor_matrix <- cor(df_crime_train))
+```
+Changing categorical data into factors to  ensure that the model can appropriately interpret and analyze categorical variables.Change after looking at collinearity.
+
+```{r}
+df_crime_train$chas <- as.factor(df_crime_train$chas)
+df_crime_train$rad <- as.factor(df_crime_train$rad)
+df_crime_train$target <- as.factor(df_crime_train$target)
+```
+
+```{r}
+str(df_crime_train)
+```
+```{r}
+model_1 <- glm(formula = target ~ ., family = binomial, data = df_crime_train)
+
+summary=(model_1)
+```
+```{r}
+
+# Gather the data into a long format
+data_long <- gather(df_crime_train, key = "Variable", value = "Value")
+
+ggplot(df_crime_train, aes(x = Value)) +
+  geom_histogram(binwidth = 1) +  # Adjust binwidth as needed
+  facet_wrap(~ Variable, scales = "free") +
+  labs(title = "Histogram of Variables")
+```
 

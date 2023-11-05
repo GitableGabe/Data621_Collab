@@ -123,6 +123,19 @@ df_crime_train <-
 head(df_crime_train,n=10)
 ```
 
+Check to make sure we do not have any missing variables: 
+
+```{r}
+summary(df_crime_eval)
+```
+
+```{r}
+summary(df_crime_train)
+```
+
+
+
+
 ## Pairwise correlation 
 Because all of the variable in the dataset are numeric, I can perform pairwise correlations to measure the strength of linearity among the variables in the training set.
 

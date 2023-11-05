@@ -180,3 +180,79 @@ False Negative
 ```{r}
 (f1_score <- (2 * precision * sensitivity)/(precision + sensitivity))
 ```
+
+```{r}
+# Create a ROC curve object
+  roc_curve <- roc(ls_class, ls_sr_prb)
+
+  # Plot the ROC curve
+  plot(roc_curve, main = "ROC Curve", col = "blue", lwd = 2)
+
+  # Calculate AUC
+  auc_value <- auc(roc_curve)
+```
+```{r}
+(result_list <- list(roc_curve_plot = roc_curve, auc_value = auc_value))
+```
+
+```{r}
+  # Calculate True Positive Rate (Sensitivity) and False Positive Rate
+  tpr <- sensitivity
+  fpr <- 1 - specificity
+
+  # Plot the ROC curve
+  plot(fpr, tpr, type = 'l', col = 'blue', lwd = 2,
+       main = 'ROC Curve', xlab = 'False Positive Rate', ylab = 'True Positive Rate')
+```
+```{r}
+# Function to generate ROC curve without external packages
+generate_ROC_curve <- function(data, true_class_col, prob_col) {
+  # Sort data by predicted probabilities in descending order
+  sorted_data <- data[order(-data[[prob_col]]), ]
+
+  # Initialize variables
+  tp <- 0  # True Positives
+  fp <- 0  # False Positives
+  tn <- sum(data[[true_class_col]] == 0)  # True Negatives
+  fn <- sum(data[[true_class_col]] == 1)  # False Negatives
+
+  # Initialize vectors to store True Positive Rate (Sensitivity) and False Positive Rate (1-Specificity)
+  tpr_vector <- numeric()
+  fpr_vector <- numeric()
+
+  # Iterate through sorted data
+  for (i in 1:nrow(sorted_data)) {
+    if (sorted_data[[true_class_col]][i] == 1) {
+      tp <- tp + 1
+      fn <- fn - 1
+    } else {
+      fp <- fp + 1
+      tn <- tn - 1
+    }
+
+    # Calculate True Positive Rate (Sensitivity) and False Positive Rate (1-Specificity)
+    tpr <- tp / (tp + fn)
+    fpr <- fp / (fp + tn)
+
+    # Append to vectors
+    tpr_vector <- c(tpr_vector, tpr)
+    fpr_vector <- c(fpr_vector, fpr)
+  }
+
+  # Calculate AUC using trapezoidal rule
+  auc <- sum(diff(fpr_vector) * tpr_vector[-1])
+
+  # Plot ROC curve
+  plot(fpr_vector, tpr_vector, type = "l", col = "blue", lwd = 2,
+       main = "ROC Curve", xlab = "False Positive Rate", ylab = "True Positive Rate")
+  abline(a = 0, b = 1, col = "red", lty = 2)
+
+  # Return AUC value
+  return(auc)
+}
+
+# Example usage
+# Assuming your data frame is named 'my_data' with columns 'class' and 'scored.probability'
+auc_value <- generate_ROC_curve(df_classif, "class", "scored.probability")
+cat("AUC:", auc_value, "\n")
+```
