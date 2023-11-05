@@ -69,5 +69,15 @@ train %>%
   group_by(target) %>% 
   count()
 ```
+```{r}
+train %>% 
+  pivot_longer(cols = !target, names_to = "predictor", values_to = "value") %>% 
+  ggplot(aes(x = value)) + 
+  geom_histogram(show.legend = FALSE) + 
+  facet_wrap(~predictor, scales = "free")
+```
+
+
+
 *** Full model should include all variable except lstat ***
 Swap out lstat if tax in the final model.
