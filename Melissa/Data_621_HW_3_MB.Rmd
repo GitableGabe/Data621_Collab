@@ -93,8 +93,16 @@ confusion matrix. Make predictions using the evaluation data set
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 library(dplyr)
 library(tidyr)
-library(car)
+library(tidyverse)
 library(ggplot2)
+library(GGally)
+library(Hmisc)
+library(corrplot)
+library(PerformanceAnalytics)
+
+#What I added
+library(scales)
+library(MASS)
 ```
 
 
@@ -125,13 +133,24 @@ head(df_crime_train,n=10)
 ```
 
 ```{r}
+df_crime_eval[is.na(df_crime_eval)]
+```
+```{r}
 df_crime_train[is.na(df_crime_train)]
 ```
+```{r}
+summary(df_crime_eval)
+```
+
+```{r}
+summary(df_crime_train)
+```
+
 
 ```{r}
 str(df_crime_train)
 ```
-
+Checking to see if data is categorical
 
 ```{r}
 xtabs(~ target + medv ,  data = df_crime_train)
@@ -140,12 +159,17 @@ xtabs(~ target + medv ,  data = df_crime_train)
 # Create a correlation matrix for all variables
 (cor_matrix <- cor(df_crime_train))
 ```
+
+The logistic regression model dependant variable target has 
+
+
 Changing categorical data into factors to  ensure that the model can appropriately interpret and analyze categorical variables.Change after looking at collinearity.
 
 ```{r}
-df_crime_train$chas <- as.factor(df_crime_train$chas)
-df_crime_train$rad <- as.factor(df_crime_train$rad)
-df_crime_train$target <- as.factor(df_crime_train$target)
+#Don't use this
+#df_crime_train$chas <- as.factor(df_crime_train$chas)
+#df_crime_train$rad <- as.factor(df_crime_train$rad)
+#df_crime_train$target <- as.factor(df_crime_train$target)
 ```
 
 ```{r}
@@ -156,14 +180,154 @@ model_1 <- glm(formula = target ~ ., family = binomial, data = df_crime_train)
 
 summary=(model_1)
 ```
-```{r}
 
+```{r}
 # Gather the data into a long format
 data_long <- gather(df_crime_train, key = "Variable", value = "Value")
 
-ggplot(df_crime_train, aes(x = Value)) +
-  geom_histogram(binwidth = 1) +  # Adjust binwidth as needed
-  facet_wrap(~ Variable, scales = "free") +
+ggplot(data_long, aes(x = Value)) +
+  geom_histogram() +
+  facet_wrap(~Variable, scales = "free") +
+  labs(title = "Histogram of Variables")
+```
+Variable here are not normalized and those normalized need to be on the same scale as the others to make data more interpretable.  
+
+******** I need to rescale after normalizing. 
+```{r}
+# Apply min-max scaling to all three variables
+data_scaled <- df_crime_train
+data_scaled[] <- lapply(df_crime_train, rescale)
+```
+
+
+```{r}
+# Gather the data into a long format
+data_long_scaled <- gather(data_scaled, key = "Variable", value = "Value")
+
+ggplot(data_long_scaled, aes(x = Value)) +
+  geom_histogram() +
+  facet_wrap(~Variable, scales = "free") +
   labs(title = "Histogram of Variables")
 ```
 
+Checking correlation of scaled varibles 
+
+```{r}
+# Create a correlation matrix for all variables
+(cor_matrix <- cor(data_scaled))
+```
+
+```{r}
+model_2 <- glm(formula = target ~ ., family = binomial, data = data_scaled)
+
+(summary=(model_2))
+```
+
+
+```{r}
+df_crime_train$age <- as.numeric(df_crime_train$age)
+```
+
+
+
+```{r}
+
+# Convert a DataFrame column to a list
+age_list <- as.numeric(as.list(df_crime_train$age))
+
+#find optimal lambda for Box-Cox transformation 
+bc <- boxcox(age_list~ 1, lambda = seq(-2,2,0.1))
+lambda <- bc$x[which.max(bc$y)]
+
+# Apply the Box-Cox transformation
+age_new = (age_list^lambda-1)/lambda
+```
+
+```{r}
+hist(age_new)
+hist(df_crime_train$age)
+```
+
+```{r}
+# Convert a DataFrame column to a list
+dis_list <- as.numeric(as.list(df_crime_train$dis))
+
+#find optimal lambda for Box-Cox transformation 
+bc <- boxcox(dis_list~ 1, lambda = seq(-2,2,0.1))
+lambda_dis <- bc$x[which.max(bc$y)]
+
+# Apply the Box-Cox transformation
+dis_new = (dis_list^lambda_dis-1)/lambda_dis
+```
+
+```{r}
+hist(dis_new)
+hist(df_crime_train$dis)
+```
+```{r}
+# Convert a DataFrame column to a list
+indus_list <- as.numeric(as.list(df_crime_train$indus))
+
+#find optimal lambda for Box-Cox transformation 
+bc <- boxcox(indus_list~ 1, lambda = seq(-2,2,0.1))
+lambda_indus <- bc$x[which.max(bc$y)]
+
+# Apply the Box-Cox transformation
+indus_new = (indus_list^lambda_indus-1)/lambda_indus
+
+
+hist(indus_new )
+hist(df_crime_train$indus)
+```
+
+
+
+```{r}
+# Create an empty list to store the transformed columns
+transformed_columns <- list()
+
+# Define the names of columns to exclude from transformation because there variables response must be positive 
+exclude_columns <- c("target", "zn", "chas")  
+
+# Iterate through the columns in df_crime_train
+for (col_name in names(df_crime_train)) {
+  # Convert the column to a list and check if it's numeric and not in the exclude list
+  if (is.numeric(df_crime_train[[col_name]]) && !(col_name %in% exclude_columns)) {
+    col_list <- as.numeric(as.list(df_crime_train[[col_name]]))
+    
+    # Find optimal lambda for Box-Cox transformation
+    bc <- boxcox(col_list ~ 1, lambda = seq(-2, 2, 0.1))
+    lambda_col <- bc$x[which.max(bc$y)]
+    
+    # Apply the Box-Cox transformation
+    col_new <- (col_list^lambda_col - 1) / lambda_col
+    
+    # Store the transformed column in the list
+    transformed_columns[[col_name]] <- col_new
+  }
+}
+
+# Convert the list of transformed columns into a DataFrame
+df_transformed <- as.data.frame(transformed_columns)
+```
+
+```{r}
+# Gather the data into a long format
+data_transformed_long <- gather(df_transformed, key = "Variable", value = "Value")
+
+ggplot(data_transformed_long, aes(x = Value)) +
+  geom_histogram() +
+  facet_wrap(~Variable, scales = "free") +
+  labs(title = "Histogram of Variables")
+```
+
+
+```{r}
+# Gather the data into a long format
+data_long <- gather(df_crime_train, key = "Variable", value = "Value")
+
+ggplot(data_long, aes(x = Value)) +
+  geom_histogram() +
+  facet_wrap(~Variable, scales = "free") +
+  labs(title = "Histogram of Variables")
+```
