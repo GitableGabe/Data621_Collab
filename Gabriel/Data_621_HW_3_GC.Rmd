@@ -5,6 +5,9 @@ author: "Group 2 - Gabriel Campos, Melissa Bowman, Alexander Khaykin, & Jennifer
 output:
   pdf_document:
     latex_engine: xelatex
+    toc: true
+    number_sections: true
+    highlight: tango
   geometry: "left=0.5cm,right=0.5cm,top=1cm,bottom=2cm"
   html_document:
     df_print: paged
@@ -37,7 +40,7 @@ the variables of interest in the data set:
 * medv: median value of owner-occupied homes in $1000s (predictor variable)
 * **target: whether the crime rate is above the median crime rate (1) or not (0) (response variable)**
 
-# Deliverables:
+## Deliverables:
 
 * A write-up submitted in PDF format. Your write-up should have four sections. Each one is described
 below. You may assume you are addressing me as a fellow data scientist, so do not need to shy away
@@ -45,7 +48,8 @@ from technical details.
 * Assigned prediction (probabilities, classifications) for the evaluation data set. Use 0.5 threshold.
 Include your R statistical programming code in an Appendix.
 
-# **Write Up:**
+## Write Up:
+
 **1. DATA EXPLORATION (25 Points)**
 Describe the size and the variables in the crime training data set. Consider that too much detail will cause
 a manager to lose interest while too little detail will make the manager consider that you aren’t doing
@@ -93,28 +97,313 @@ confusion matrix. Make predictions using the evaluation data set
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 library(dplyr)
 library(tidyr)
+library(tidyverse)
+library(ggplot2)
+library(GGally)
+library(Hmisc)
+library(corrplot)
+library(PerformanceAnalytics)
+library(scales)
+library(MASS)
+library(xtable)
+library(kableExtra)
+library(reactable)
+library(stargazer)
+library(pander)
 ```
 
 
-## **Load the data**
-```{r data-import}
+## Load the data
+
+```{r data-import, echo=FALSE}
 git_url<-
   "https://raw.githubusercontent.com/GitableGabe/Data621_Data/main/"
 
 ```
 
 ```{r}
-
 df_crime_eval <- 
   read.csv(paste0(git_url,"crime-evaluation-data_modified.csv"))
-head(df_crime_eval,n=10)
+```
+
+
+```{r, echo=FALSE}
+
+head(df_crime_eval,10)%>%
+  kable(format = "latex",
+    booktabs = TRUE,
+    longtable = TRUE,
+    linesep = "",
+    align = "l",
+    #col.names = linebreak(column_names, align = "l"),
+    escape = FALSE)%>%
+  kable_styling(position = "left",
+      latex_options = c("striped", "repeat_header"),
+      stripe_color = "gray!15")
 
 ```
 
 ```{r}
 df_crime_train <- 
   read.csv(paste0(git_url,"crime-training-data_modified.csv"))
-head(df_crime_train,n=10)
+```
+
+```{r, echo=FALSE}
+
+head(df_crime_train,10)%>%
+  kable(format = "latex",
+    booktabs = TRUE,
+    longtable = TRUE,
+    linesep = "",
+    align = "l",
+    #col.names = linebreak(column_names, align = "l"),
+    escape = FALSE)%>%
+  kable_styling(position = "left",
+      latex_options = c("striped", "repeat_header"),
+      stripe_color = "gray!15")
+
+```
+
+## Remove NA's
+
+```{r, message=FALSE}
+df_crime_eval[is.na(df_crime_eval)]
+
+df_crime_train[is.na(df_crime_train)]
+```
+
+## Summaries
+
+```{r}
+summary(df_crime_eval)
+```
+
+```{r}
+summary(df_crime_train)
+```
+
+## Inspecting for Categorical Variables
+
+```{r, message=TRUE, ca}
+str(df_crime_train)
+```
+## Contingecny Tables / Frequency
+
+
+```{r, include=FALSE}
+xtabs(~ target + medv ,  data = df_crime_train)
+
+```
+
+## C0rrelation Matrix
+
+```{r}
+# Create a correlation matrix for all variables
+(cor_matrix <- cor(df_crime_train))
+```
+
+The logistic regression model dependent variable target has 
+
+
+Changing categorical data into factors to  ensure that the model can appropriately interpret and analyze categorical variables.Change after looking at col linearity.
+
+```{r}
+#Don't use this
+#df_crime_train$chas <- as.factor(df_crime_train$chas)
+#df_crime_train$rad <- as.factor(df_crime_train$rad)
+#df_crime_train$target <- as.factor(df_crime_train$target)
+```
+
+## Training Data Structure
+
+```{r}
+str(df_crime_train)
+```
+
+## Model 1
+
+```{r}
+model_1 <- glm(formula = target ~ ., family = binomial, data = df_crime_train)
+
+summary(model_1)
+```
+
+```{r}
+# Gather the data into a long format
+data_long <- gather(df_crime_train, key = "Variable", value = "Value")
+
+ggplot(data_long, aes(x = Value)) +
+  geom_histogram() +
+  facet_wrap(~Variable, scales = "free") +
+  labs(title = "Histogram of Variables")
+```
+
+Visually it is apparent that not all the data is normalized.
+To assist with interpreting, attributes are re scaled to
+0.00, 0.25, 0.50, 0.75 & 1.00
+  
+```{r}
+# Apply min-max scaling to all three variables
+data_scaled <- df_crime_train
+data_scaled[] <- lapply(df_crime_train, rescale)
 ```
 
 
+```{r}
+# Gather the data into a long format
+data_long_scaled <- gather(data_scaled, key = "Variable", value = "Value")
+
+ggplot(data_long_scaled, aes(x = Value)) +
+  geom_histogram() +
+  facet_wrap(~Variable, scales = "free") +
+  labs(title = "Histogram of Variables")
+```
+
+```{r}
+# Add new columns and rename them
+df_merged<-(bind_cols(df_crime_train,
+                (df_merged <- data_scaled %>%
+                   mutate(zn_t = zn,indus_t = indus,chas_t=chas,nox_t=nox,
+                          rm_t=rm,age_t=age,dis_t=dis,rad_t=rad,tax_t=tax,
+                          ptratio_t=ptratio,lstat_t=lstat,medv_t=medv,
+                          target_t=target))%>%dplyr::select(ends_with("_t"))
+                )%>%
+         dplyr::select(zn,zn_t,indus,indus_t,chas,chas_t,nox,nox_t,rm,rm_t,
+                       age,age_t,dis,dis_t,rad,rad_t,tax,tax_t,ptratio,
+                       ptratio_t,lstat,lstat_t,medv,medv_t,target,target_t)
+)
+
+# Display the updated dataframe
+df_merged%>%
+  kable()%>%
+  kable_styling()
+
+```
+
+
+Checking correlation of scaled varibles 
+
+```{r}
+# Create a correlation matrix for all variables
+(cor_matrix <- cor(data_scaled))
+```
+
+```{r}
+model_2 <- glm(formula = target ~ ., family = binomial, data = data_scaled)
+
+(summary=(model_2))
+```
+
+
+```{r}
+df_crime_train$age <- as.numeric(df_crime_train$age)
+```
+
+
+
+```{r}
+
+# Convert a DataFrame column to a list
+age_list <- as.numeric(as.list(df_crime_train$age))
+
+#find optimal lambda for Box-Cox transformation 
+bc <- boxcox(age_list~ 1, lambda = seq(-2,2,0.1))
+lambda <- bc$x[which.max(bc$y)]
+
+# Apply the Box-Cox transformation
+age_new = (age_list^lambda-1)/lambda
+```
+
+```{r}
+hist(age_new)
+hist(df_crime_train$age)
+```
+
+```{r}
+# Convert a DataFrame column to a list
+dis_list <- as.numeric(as.list(df_crime_train$dis))
+
+#find optimal lambda for Box-Cox transformation 
+bc <- boxcox(dis_list~ 1, lambda = seq(-2,2,0.1))
+lambda_dis <- bc$x[which.max(bc$y)]
+
+# Apply the Box-Cox transformation
+dis_new = (dis_list^lambda_dis-1)/lambda_dis
+```
+
+```{r}
+hist(dis_new)
+hist(df_crime_train$dis)
+```
+```{r}
+# Convert a DataFrame column to a list
+indus_list <- as.numeric(as.list(df_crime_train$indus))
+
+#find optimal lambda for Box-Cox transformation 
+bc <- boxcox(indus_list~ 1, lambda = seq(-2,2,0.1))
+lambda_indus <- bc$x[which.max(bc$y)]
+
+# Apply the Box-Cox transformation
+indus_new = (indus_list^lambda_indus-1)/lambda_indus
+
+
+hist(indus_new )
+hist(df_crime_train$indus)
+```
+
+
+
+```{r}
+# Create an empty list to store the transformed columns
+transformed_columns <- list()
+
+# Define the names of columns to exclude from transformation because there variables response must be positive 
+exclude_columns <- c("target", "zn", "chas")  
+
+# Iterate through the columns in df_crime_train
+for (col_name in names(df_crime_train)) {
+  # Convert the column to a list and check if it's numeric and not in the exclude list
+  if (is.numeric(df_crime_train[[col_name]]) && !(col_name %in% exclude_columns)) {
+    col_list <- as.numeric(as.list(df_crime_train[[col_name]]))
+    
+    # Find optimal lambda for Box-Cox transformation
+    bc <- boxcox(col_list ~ 1, lambda = seq(-2, 2, 0.1))
+    lambda_col <- bc$x[which.max(bc$y)]
+    
+    # Apply the Box-Cox transformation
+    col_new <- (col_list^lambda_col - 1) / lambda_col
+    
+    
+    # Store the transformed column in the list
+    transformed_columns[[col_name]] <- col_new
+  }
+}
+
+# Convert the list of transformed columns into a DataFrame
+df_transformed <- as.data.frame(transformed_columns)
+```
+```{r}
+col_new2 <- ifelse(col_list==0, log(col_list), (col_list^lambda_col - 1) / lambda_col)
+as.data.frame(col_new2)
+```
+
+```{r}
+# Gather the data into a long format
+data_transformed_long <- gather(df_transformed, key = "Variable", value = "Value")
+
+ggplot(data_transformed_long, aes(x = Value)) +
+  geom_histogram() +
+  facet_wrap(~Variable, scales = "free") +
+  labs(title = "Histogram of Variables")
+```
+
+
+```{r}
+# Gather the data into a long format
+data_long <- gather(df_crime_train, key = "Variable", value = "Value")
+
+ggplot(data_long, aes(x = Value)) +
+  geom_histogram() +
+  facet_wrap(~Variable, scales = "free") +
+  labs(title = "Histogram of Variables")
+```
