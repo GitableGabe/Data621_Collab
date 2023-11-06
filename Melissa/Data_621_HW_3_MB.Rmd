@@ -178,7 +178,7 @@ str(df_crime_train)
 ```{r}
 model_1 <- glm(formula = target ~ ., family = binomial, data = df_crime_train)
 
-summary=(model_1)
+summary(model_1)
 ```
 
 ```{r}
@@ -319,6 +319,7 @@ ggplot(data_transformed_long, aes(x = Value)) +
   geom_histogram() +
   facet_wrap(~Variable, scales = "free") +
   labs(title = "Histogram of Variables")
+# (dis_t, lstat_t, medv_t, nox_t)
 ```
 
 
