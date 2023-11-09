@@ -190,12 +190,12 @@ str(df_crime_train)
 ## Contingecny Tables / Frequency
 
 
-```{r, include=FALSE}
-xtabs(~ target + medv ,  data = df_crime_train)
+```{r, include=TRUE}
+(xtabs(~ target + medv ,  data = df_crime_train))
 
 ```
 
-## C0rrelation Matrix
+## Correlation Matrix
 
 ```{r}
 # Create a correlation matrix for all variables
@@ -258,6 +258,10 @@ ggplot(data_long_scaled, aes(x = Value)) +
   facet_wrap(~Variable, scales = "free") +
   labs(title = "Histogram of Variables")
 ```
+
+
+## Merged Model
+
 
 ```{r}
 # Add new columns and rename them
@@ -371,8 +375,8 @@ for (col_name in names(df_crime_train)) {
     lambda_col <- bc$x[which.max(bc$y)]
     
     # Apply the Box-Cox transformation
-    col_new <- (col_list^lambda_col - 1) / lambda_col
-    
+    #col_new <- (col_list^lambda_col - 1) / lambda_col
+    col_new <- ifelse(col_list==0, log(col_list), (col_list^lambda_col - 1) / lambda_col)
     
     # Store the transformed column in the list
     transformed_columns[[col_name]] <- col_new
@@ -382,10 +386,7 @@ for (col_name in names(df_crime_train)) {
 # Convert the list of transformed columns into a DataFrame
 df_transformed <- as.data.frame(transformed_columns)
 ```
-```{r}
-col_new2 <- ifelse(col_list==0, log(col_list), (col_list^lambda_col - 1) / lambda_col)
-as.data.frame(col_new2)
-```
+
 
 ```{r}
 # Gather the data into a long format
