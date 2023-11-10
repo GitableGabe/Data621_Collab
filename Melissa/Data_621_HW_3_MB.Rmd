@@ -375,3 +375,54 @@ ggplot(df_crime_train_with_transformed, aes(x = Value)) +
   labs(title = "Histogram of Variables")
 ```
 
+
+
+
+```{r}
+# Create an empty list to store the transformed columns
+transformed_columns_eval <- list()
+
+# Define the names of columns to exclude from transformation because there variables response must be positive 
+exclude_columns <- c("zn", "chas")  
+
+# Iterate through the columns in df_crime_eval
+for (col_name in names(df_crime_eval)) {
+  # Convert the column to a list and check if it's numeric and not in the exclude list
+  if (is.numeric(df_crime_eval[[col_name]]) && !(col_name %in% exclude_columns)) {
+    col_list <- as.numeric(as.list(df_crime_eval[[col_name]]))
+    
+    # Find optimal lambda for Box-Cox transformation
+    bc <- boxcox(col_list ~ 1, lambda = seq(-2, 2, 0.1))
+    lambda_col <- bc$x[which.max(bc$y)]
+    
+    # Apply the Box-Cox transformation
+    col_new <- ifelse(col_list==0, log(col_list), (col_list^lambda_col - 1) / lambda_col)
+    
+    # Store the transformed column in the list
+    transformed_columns_eval[[col_name]] <- col_new
+  }
+}
+
+# Convert the list of transformed columns into a DataFrame
+df_transformed_eval <- as.data.frame(transformed_columns_eval)
+```
+```{r}
+# Move 
+df_crime_train_with_transformed_eval <- df_transformed_eval %>%
+  dplyr::select(dis, lstat, medv, nox) %>%
+  mutate(dis_t = dis, lstat_t = lstat, medv_t = medv, nox_t = nox)%>%
+                dplyr::select(-c(dis, lstat, medv, nox))
+```
+
+```{r}
+# Combine data frames by adding columns
+result_eval <- cbind(df_crime_train_with_transformed_eval, df_crime_eval %>%
+                dplyr::select(-c(dis, lstat, medv, nox)))
+```
+
+
+```{r}
+# Apply min-max scaling to all three variables
+data_scaled_eval <- result_eval
+data_scaled_eval[] <- lapply(result_eval, rescale)
+```
