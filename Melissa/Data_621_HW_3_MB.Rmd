@@ -300,7 +300,7 @@ for (col_name in names(df_crime_train)) {
     lambda_col <- bc$x[which.max(bc$y)]
     
     # Apply the Box-Cox transformation
-    col_new <- (col_list^lambda_col - 1) / lambda_col
+    col_new <- ifelse(col_list==0, log(col_list), (col_list^lambda_col - 1) / lambda_col)
     
     # Store the transformed column in the list
     transformed_columns[[col_name]] <- col_new
@@ -332,3 +332,43 @@ ggplot(data_long, aes(x = Value)) +
   facet_wrap(~Variable, scales = "free") +
   labs(title = "Histogram of Variables")
 ```
+
+```{r}
+# Move 
+df_crime_train_with_transformed <- df_transformed %>%
+  dplyr::select(dis, lstat, medv, nox) %>%
+  mutate(dis_t = dis, lstat_t = lstat, medv_t = medv, nox_t = nox)%>%
+                dplyr::select(-c(dis, lstat, medv, nox))
+```
+
+
+```{r}
+# Combine data frames by adding columns
+result <- cbind(df_crime_train_with_transformed, df_crime_train %>%
+                dplyr::select(-c(dis, lstat, medv, nox)))
+```
+
+
+```{r}
+# Create a correlation matrix for all variables
+(cor_matrix <- cor(result))
+```
+
+
+```{r}
+# Apply min-max scaling to all three variables
+data_scaled <- result
+data_scaled[] <- lapply(result, rescale)
+```
+
+
+```{r}
+# Gather the data into a long format
+df_crime_train_with_transformed <- gather(data_scaled, key = "Variable", value = "Value")
+
+ggplot(df_crime_train_with_transformed, aes(x = Value)) +
+  geom_histogram() +
+  facet_wrap(~Variable, scales = "free") +
+  labs(title = "Histogram of Variables")
+```
+
