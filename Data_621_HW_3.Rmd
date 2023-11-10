@@ -182,3 +182,111 @@ df_crime_train %>%
 *** Full model should include all variable except lstat ***
 Swap out lstat if tax in the final model.
 
+
+```{r}
+# Gather the data into a long format
+data_long <- gather(df_crime_train, key = "Variable", value = "Value")
+
+ggplot(data_long, aes(x = Value)) +
+  geom_histogram() +
+  facet_wrap(~Variable, scales = "free") +
+  labs(title = "Histogram of Variables")
+```
+
+
+```{r}
+model_1 <- glm(formula = target ~ ., family = binomial, data = df_crime_train)
+
+(summary(model_1))
+```
+
+```{r}
+# Create an empty list to store the transformed columns
+transformed_columns <- list()
+
+# Define the names of columns to exclude from transformation because there variables response must be positive 
+exclude_columns <- c("target", "zn", "chas")  
+
+# Iterate through the columns in df_crime_train
+for (col_name in names(df_crime_data_scaled_t_train)) {
+  # Convert the column to a list and check if it's numeric and not in the exclude list
+  if (is.numeric(df_crime_train[[col_name]]) && !(col_name %in% exclude_columns)) {
+    col_list <- as.numeric(as.list(df_crime_train[[col_name]]))
+    
+    # Find optimal lambda for Box-Cox transformation
+    bc <- boxcox(col_list ~ 1, lambda = seq(-2, 2, 0.1))
+    lambda_col <- bc$x[which.max(bc$y)]
+    
+    # Apply the Box-Cox transformation
+    col_new <- ifelse(col_list==0, log(col_list), (col_list^lambda_col - 1) / lambda_col)
+    
+    # Store the transformed column in the list
+    transformed_columns[[col_name]] <- col_new
+  }
+}
+
+# Convert the list of transformed columns into a DataFrame
+df_transformed <- as.data.frame(transformed_columns)
+```
+
+
+```{r}
+# Gather the data into a long format
+data_transformed_long <- gather(df_transformed, key = "Variable", value = "Value")
+
+ggplot(data_transformed_long, aes(x = Value)) +
+  geom_histogram() +
+  facet_wrap(~Variable, scales = "free") +
+  labs(title = "Histogram of Variables")
+# (dis_t, lstat_t, medv_t, nox_t)
+```
+
+```{r}
+# Move 
+df_crime_train_with_transformed <- df_transformed %>%
+  dplyr::select(dis, lstat, medv, nox) %>%
+  mutate(dis_t = dis, lstat_t = lstat, medv_t = medv, nox_t = nox)%>%
+                dplyr::select(-c(dis, lstat, medv, nox))
+```
+
+
+```{r}
+# Combine data frames by adding columns
+result <- cbind(df_crime_train_with_transformed, df_crime_train %>%
+                dplyr::select(-c(dis, lstat, medv, nox)))
+```
+
+
+```{r}
+# Create a correlation matrix for all variables
+(cor_matrix <- cor(result))
+```
+
+
+```{r}
+# Apply min-max scaling to all three variables
+data_scaled_t_train <- result
+data_scaled_t_train[] <- lapply(result, rescale)
+```
+
+
+```{r}
+# Gather the data into a long format
+df_crime_train_with_transformed <- gather(data_scaled_t_train, key = "Variable", value = "Value")
+
+ggplot(df_crime_train_with_transformed, aes(x = Value)) +
+  geom_histogram() +
+  facet_wrap(~Variable, scales = "free") +
+  labs(title = "Histogram of Variables")
+```
+
+```{r}
+# Create a correlation matrix for all variables
+(cor_matrix <- cor(data_scaled_t_train))
+```
+
+```{r}
+model_2 <- glm(formula = target ~ ., family = binomial, data = data_scaled_t_train)
+
+(summary(model_2))
+```

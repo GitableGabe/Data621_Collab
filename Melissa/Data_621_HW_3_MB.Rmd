@@ -5,6 +5,9 @@ author: "Group 2 - Gabriel Campos, Melissa Bowman, Alexander Khaykin, & Jennifer
 output:
   pdf_document:
     latex_engine: xelatex
+    toc: true
+    number_sections: true
+    highlight: tango
   geometry: "left=0.5cm,right=0.5cm,top=1cm,bottom=2cm"
   html_document:
     df_print: paged
