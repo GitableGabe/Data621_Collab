@@ -93,7 +93,7 @@ confusion matrix. Make predictions using the evaluation data set
 
 \newpage
 
-# Data Exploration
+# 1. **DATA EXPLORATION**
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 library(dplyr)
@@ -147,11 +147,6 @@ df_crime_train[is.na(df_crime_train)]
 ```
 ### **Data Summary**
 
-
-```{r}
-summary(df_crime_eval)
-```
-
 ```{r}
 summary(df_crime_train)
 ```
@@ -188,6 +183,9 @@ Changing categorical data into factors to  ensure that the model can appropriate
 ```{r}
 str(df_crime_train)
 ```
+
+# 2. **DATA PREPARATION**
+
 ## **Model 1**
 
 ```{r}
@@ -407,7 +405,293 @@ ggplot(df_crime_train_with_transformed, aes(x = Value)) +
   labs(title = "Histogram of Variables")
 ```
 
-# Transform 'df_crime_eval'
+# 3. **BUILD MODELS**
+
+**Let us explore three different models including:**
+
+* A - Backward Elimination with AIC Criterion
+* B - Forward Selection with AIC Criterion
+* C - 
+
+## A - **Backward Elimination with AIC Criterion**
+
+### A1 - **ALL Variables -AIC 222.37**
+
+```{r}
+# Including all variables
+A1_back_elim <- glm(formula = target ~ ., family = binomial (link="logit"), data = df_scaled)
+
+summary(A1_back_elim)
+```
+
+```{r}
+drop1(A1_back_elim,test="Chi")
+```
+
+#### **Observations**
+* AIC of 222.37 
+* Residual Deviance of 196.37 on 453 df
+* 6 of 12 variable coefficients and the intercept coefficient are significant (p < .05)
+* Indus variable has largest p-value of .76
+
+### A2 - **Removed Variable (indus) with Largest P-Value -AIC 220.46**
+
+```{r}
+# Removed variables: indus
+A2_back_elim <- glm(formula = target ~ dis_t 
+                   + medv_t + nox_t + zn
+                   + lstat_t + chas + rm 
+                   + age + rad + tax
+                   + ptratio
+                   , family = binomial, data = df_scaled)
+
+summary(A2_back_elim)
+```
+
+#### **Observations**
+* AIC decreased to 220.46 (previously 222.37)
+* Residual Deviance increased to 196.46 on 454 df (previously 196.37 on 453 df)
+* 6 of 11 variable coefficients and the intercept coefficient are significant (p < .05)
+* lstat_t variable has largest p-value of .757
+
+### A3 - **Removed Next Variable with Largest P-Value (lstat_t) -AIC 218.56**
+
+```{r}
+# Removed variables: indus, lstat_t
+A3_back_elim <- glm(formula = target ~ dis_t 
+                   + medv_t + nox_t + zn
+                   + chas + rm 
+                   + age + rad + tax
+                   + ptratio
+                   , family = binomial, data = df_scaled)
+
+summary(A3_back_elim)
+```
+
+#### **Observations**
+* AIC decreased to 218.56 (previously 220.46)
+* Residual Deviance increased to 196.56 on 455 df (previously 196.46 on 454 df)
+* 6 of 10 variable coefficients and the intercept coefficient are significant (p < .05)
+* rm variable has largest p-value of .58
+
+### A4 - **Removed Next Variable with Largest P-Value (rm) -AIC 216.86**
+
+```{r}
+# Removed variables: indus, lstat_t, rm
+A4_back_elim <- glm(formula = target ~ dis_t 
+                   + medv_t + nox_t + zn
+                   + chas 
+                   + age + rad + tax
+                   + ptratio
+                   , family = binomial, data = df_scaled)
+
+summary(A4_back_elim)
+```
+
+#### **Observations**
+* AIC decreased to 216.86 (previously 218.56)
+* Residual Deviance increased to 196.86 on 456 df (previously 196.56 on 455 df)
+* Same 6 variable coefficients of 9 and the intercept coefficient are significant (p < .05)
+* zn variable has largest p-value of .399
+
+### A5 - **Removed Next Variable with Largest P-Value (zn) -AIC 215.64**
+
+```{r}
+# Removed variables: indus, lstat_t, rm, zn
+A5_back_elim <- glm(formula = target ~ dis_t 
+                   + medv_t + nox_t
+                   + chas 
+                   + age + rad + tax
+                   + ptratio
+                   , family = binomial, data = df_scaled)
+
+summary(A5_back_elim)
+```
+
+#### **Observations**
+* AIC decreased to 215.64 (previously 216.86)
+* Residual Deviance increased to 197.64 on 457 df (previously 196.86 on 456 df)
+* Same 6 of 8 variable coefficients and the intercept coefficient are significant (p < .05)
+* chas variable has largest p-value of .170
+
+### A6 - **Removed Next Variable with Largest P-Value (chas) -AIC 215.57**
+
+```{r}
+# Removed variables: indus, lstat_t, rm, zn, chas
+A6_back_elim <- glm(formula = target ~ dis_t 
+                   + medv_t + nox_t
+                   + age + rad + tax
+                   + ptratio
+                   , family = binomial, data = df_scaled)
+
+summary(A6_back_elim)
+```
+
+#### **Observations**
+* AIC decreased to 215.57 (previously 215.64)
+* Residual Deviance increased to 199.57 on 458 df (previously 197.64 on 457 df)
+* 7 of 7 variable coefficients and the intercept coefficient are significant (p < .05)
+
+```{r}
+anova(A1_back_elim, A6_back_elim, test="Chi")
+```
+
+### BEST MODEL: A6_back_elim
+* Predictors: dis_t + medv_t + nox_t + age + rad + tax + ptratio
+* Best AIC of 235.17
+
+## B - **Forward Selection with AIC Criterion**
+
+### B1 - **Start with Variable nox_t with Lowest P-Value  -AIC 295.88**
+```{r}
+B1_forward <- glm(formula = target ~ nox_t  
+                   , family = binomial, data = df_scaled)
+
+summary(B1_forward)
+```
+
+#### **Observations**
+* AIC of 295.88
+* Residual Deviance of 291.88 on 464 df
+* 1 of 1 variable coefficients and the intercept coefficient are significant (p < .05)
+* Rad variable has next smallest p-value
+
+### B2 - **Add Variable with Next Lowest P-Value (rad)  -AIC 243.42**
+```{r}
+B2_forward <- glm(formula = target ~ nox_t  
+                   + rad
+                   , family = binomial, data = df_scaled)
+
+summary(B2_forward)
+```
+
+#### **Observations**
+* AIC decreased to 243.42 (previously 295.88)
+* Residual Deviance decreased to 237.42 on 463 df (previously 291.88 on 464 df)
+* 2 of 2 variable coefficients and the intercept coefficient are significant (p < .05)
+* dist_t variable has next smallest p-value
+
+### B3 - **Add Variable with Next Lowest P-Value (dist_t)  -AIC 237.33**
+```{r}
+B3_forward <- glm(formula = target ~ nox_t
+                   + rad
+                   + dis_t
+                   , family = binomial, data = df_scaled)
+
+summary(B3_forward)
+```
+#### **Observations**
+* AIC decreased to 237.33 (previously 243.42)
+* Residual Deviance decreased to 229.33 on 462 df (previously 237.42 on 463 df)
+* 3 of 3 variable coefficients and the intercept coefficient are significant (p < .05)
+* ptratio variable has next smallest p-value
+
+### B4 - **Add Variable with Next Lowest P-Value (ptratio)  -AIC 237.74**
+```{r}
+B4_forward <- glm(formula = target ~ nox_t
+                   + rad
+                   + dis_t
+                   + ptratio
+                   , family = binomial, data = df_scaled)
+
+summary(B4_forward)
+```
+
+#### **Observations**
+* AIC increased to 237.74 (previously 237.33)
+* Residual Deviance decreased to 227.74 on 461 df (previously 229.33 on 462 df)
+* 3 of 4 variable coefficients and the intercept coefficient are significant (p < .05)
+* age variable has next smallest p-value
+
+### B5 - **Add Variable with Next Lowest P-Value (age), Exclude ptratio  -AIC 235.17**
+Have not included ptratio as the previous model B4 demonstrated that including this variable decreased the model fit as the AIC increased rather than decreased.
+
+```{r}
+B5_forward <- glm(formula = target ~ nox_t
+                   + rad
+                   + dis_t
+                   + age
+                   , family = binomial, data = df_scaled)
+
+summary(B5_forward)
+```
+
+#### **Observations**
+* AIC has decreased to 235.17 (previously 237.74 and 237.33)
+* Residual Deviance decreased to 225.17 df (previously 227.74 on 461 df)
+* 4 of 4 variable coefficients and the intercept coefficient are significant (p < .05)
+
+### BEST MODEL: B5_forward 
+* Predictors: nox_t + rad + dis_t + age
+* Best AIC of 235.17
+
+## C - **THIRD MODEL**
+
+### Correlations between Variables 
+```{r}
+cor(df_scaled, y=df_scaled$target)
+```
+
+
+```{r}
+df_scaled %>% 
+  cor(.,) %>% 
+  corrplot(., method = "ellipse", type = "lower",addCoef.col = 'black', diag = FALSE)
+```
+
+```{r}
+cor(df_scaled, y=df_scaled$nox_t)
+```
+### C1 - **Add Interaction between nox_t & dist_t because of strong negative relationship with each other -AIC 237.02**
+Starting out with our Forward Selection Model B5 and adding the interaction term for nox_t & dis_t as they have a correlation of -.877.
+
+```{r}
+C1_model <- glm(formula = target ~ 
+                    nox_t
+                   + rad
+                + dis_t
+                   + age
+                  + nox_t*dis_t
+                   , family = binomial, data = df_scaled)
+
+summary(C1_model)
+```
+#### **Observations**
+Compared to the original B5 Model:
+* AIC has increased to 237.02 (previously 235.17)
+* Residual Deviance decreased to 225.02 on 460 df (previously 225.17 on 461 df)
+* Only nox_t and rad variable coefficients and the intercept coefficient are significant (p < .05)
+* Adding the interaction term has affected the goodness of fit negatively as not only is it not significant, but the variable coefficients for dis_t and age are no longer significant.
+
+### C2 - **Add Interaction between nox_t & dist_t because of strong negative relationship with each other -AIC 235.17**
+```{r}
+# Remove                    
+C2_model <- glm(formula = target ~ 
+                    nox_t
+                   + rad
+                + dis_t
+                   + age
+                   , family = binomial, data = df_scaled)
+
+summary(C2_model)
+```
+#### **Observations**
+Compared to the original B5 Model:
+* AIC has increased to 237.02 (previously 235.17)
+* Residual Deviance decreased to 225.02 on 460 df (previously 225.17 on 461 df)
+* 4 of 4 variable coefficients and the intercept coefficient are significant (p < .05)
+
+```{r}
+
+```
+
+# 4. **MODEL SELECTION**
+## **Selection Criteria to Consider**
+
+## Transform 'df_crime_eval'
+```{r}
+summary(df_crime_eval)
+```
 
 ```{r}
 # Create an empty list to store the transformed columns
