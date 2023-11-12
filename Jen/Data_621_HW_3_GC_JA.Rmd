@@ -14,8 +14,8 @@ output:
     df_print: paged
 urlcolor: blue
 ---
-
-# Overview
+\newpage
+**Overview**
 
 In this homework assignment, you will explore, analyze and model a data set containing information on
 crime for various neighborhoods of a major city. Each record has a response variable indicating whether
@@ -41,7 +41,7 @@ the variables of interest in the data set:
 * medv: median value of owner-occupied homes in $1000s (predictor variable)
 * **target: whether the crime rate is above the median crime rate (1) or not (0) (response variable)**
 
-## Deliverables:
+**Deliverables:**
 
 * A write-up submitted in PDF format. Your write-up should have four sections. Each one is described
 below. You may assume you are addressing me as a fellow data scientist, so do not need to shy away
@@ -49,7 +49,7 @@ from technical details.
 * Assigned prediction (probabilities, classifications) for the evaluation data set. Use 0.5 threshold.
 Include your R statistical programming code in an Appendix.
 
-### **Write Up:**
+**Write Up:**
 
 **1. DATA EXPLORATION (25 Points)**
 Describe the size and the variables in the crime training data set. Consider that too much detail will cause
@@ -93,7 +93,7 @@ confusion matrix. Make predictions using the evaluation data set
 
 \newpage
 
-# 1. **DATA EXPLORATION**
+# **DATA EXPLORATION**
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 library(dplyr)
@@ -150,16 +150,9 @@ df_crime_train[is.na(df_crime_train)]
 ```{r}
 summary(df_crime_train)
 ```
+Upon a comprehensive examination of the dataset, it is noteworthy that there are no missing values, underscoring the completeness of the provided data. This absence of missing values is a positive indicator, as it eliminates the need for imputation or data filling techniques that might have otherwise been necessary.
 
-
-```{r}
-str(df_crime_train)
-```
-Checking to see if data is categorical
-
-```{r}
-xtabs(~ target + medv ,  data = df_crime_train)
-```
+Also, the examining the means and medians of the variables aids in understanding the distribution's symmetry, identifying outliers, assessing data consistency, and simplifying the interpretation of central tendency measures through alignment between the mean and median.
 
 ### **Correlation Matrix***
 
@@ -167,33 +160,24 @@ xtabs(~ target + medv ,  data = df_crime_train)
 # Create a correlation matrix for all variables
 (matrix_cor <- cor(df_crime_train))
 ```
+Taking a glance at the correlation matrix of 'df_crime_train,' it is evident that the highly correlated variables are 'rad' and 'tax,' exhibiting a strong correlation of 91%. Considering this substantial correlation, there may be a need to explore the possibility of combining these variables.
 
-The logistic regression model dependant variable target has 
+Additionally, when assessing the correlation of variables to the target, the most correlated variables to the least correlated variables are as follows: nox (72%), age (63%), rad (62%), dis (62%), tax (61%), indus (60%), lstat (47%), zn (43%), medv (27%), ptratio (25%), rm (15%), and chas (8%).
 
 
-Changing categorical data into factors to  ensure that the model can appropriately interpret and analyze categorical variables.Change after looking at collinearity.
-
-```{r, include=FALSE}
-#Don't use this
-#df_crime_train$chas <- as.factor(df_crime_train$chas)
-#df_crime_train$rad <- as.factor(df_crime_train$rad)
-#df_crime_train$target <- as.factor(df_crime_train$target)
-```
-
-```{r}
-str(df_crime_train)
-```
-
-# 2. **DATA PREPARATION**
+# **DATA PREPARATION**
 
 ## **Model 1**
 
+Examining the models without transforming or prepping the data provides us with a baseline to assess whether transforming or prepping the data will enhance the model.
 ```{r}
 model_1 <- glm(formula = target ~ ., family = binomial, data = df_crime_train)
 
 summary(model_1)
 ```
 
+
+In the data preparation phase, we assessed the distribution of variables to determine whether they demonstrated a normalized distribution. Ensuring a normal distribution for variables in a regression model holds paramount importance for various reasons. Firstly, adherence to the assumption of normality is crucial because many statistical techniques, including those employed in regression analysis, rely on this assumption for their validity. Secondly, achieving normality in variables contributes to more accurate and efficient parameter estimates, enhancing the overall performance of the model. Furthermore, statistical inferences, such as confidence intervals and hypothesis tests, are based on normality assumptions, emphasizing the necessity of a normal distribution. Normality is also pivotal in the analysis of residuals, as normally distributed residuals signify a well-fitted model. The robustness of statistical methods is bolstered when data approximates a normal distribution, making the results more dependable and less sensitive to outliers. Lastly, normality simplifies the interpretability of coefficients, facilitating a clearer understanding of the impact of predictors on the outcome.
 ```{r}
 # Gather the data into a long format
 df_long <- gather(df_crime_train, key = "Variable", value = "Value")
@@ -203,11 +187,13 @@ ggplot(df_long, aes(x = Value)) +
   facet_wrap(~Variable, scales = "free") +
   labs(title = "Histogram of Variables")
 ```
+
+
+
 ### **Scale**
 
-Variable here are not normalized and those normalized need to be on the same scale as the others to make data more interpretable.  
+The variables currently lack normalization, and it is imperative to address this issue. To initiate the correction process, our first step involves applying normalization to the variables by scaling them. This entails transforming the variables to a standardized scale. Normalizing the scale of variables is particularly crucial in logistic regression. In logistic regression, the scale of the predictor variables influences the parameter estimates, and having variables on different scales might lead to uneven contributions to the model. Normalizing the scale helps ensure that each variable contributes proportionally to the logistic regression model, thereby improving the stability and interpretability of the model. This preliminary normalization step will allow us to assess whether achieving a standardized scale enhances the model's performance before further adjustments are made.
 
-******** I need to rescale after normalizing. 
 ```{r}
 # Apply min-max scaling to all three variables
 df_scaled <- df_crime_train
@@ -240,73 +226,16 @@ model_2 <- glm(formula = target ~ ., family = binomial, data = df_scaled)
 (summary(model_2))
 ```
 
+Scaling the variables did not yield improvements in the model performance. However, we will explore the potential benefits of applying the Box-Cox transformation to achieve normality in the variable distributions. The Box-Cox transformation is a statistical technique that aims to stabilize the variance and make the data more closely approximate a normal distribution. Specifically, it involves raising each data point to a power, with the power determined during the transformation process. The goal is to identify the power that maximizes the normality of the data. By doing so, Box-Cox can address issues such as skewed distributions and unequal variances, making the variables more amenable to statistical methods that assume normality. Implementing the Box-Cox transformation serves as a valuable step in preparing the variables for logistic regression, potentially enhancing the model's performance by aligning with the underlying assumptions of the chosen statistical approach.
+
+### Box-Cox
 
 ```{r}
 df_crime_train$age <- as.numeric(df_crime_train$age)
 ```
 
-### Box-Cox 'Age'
 
-```{r}
-
-# Convert a DataFrame column to a list
-ls_age <- as.numeric(as.list(df_crime_train$age))
-
-#find optimal lambda for Box-Cox transformation 
-bc <- boxcox(ls_age~ 1, lambda = seq(-2,2,0.1))
-lambda <- bc$x[which.max(bc$y)]
-
-# Apply the Box-Cox transformation
-ls_age_new = (ls_age^lambda-1)/lambda
-```
-
-```{r}
-hist(ls_age_new)
-hist(df_crime_train$age)
-```
-
-### Box-Cox 'Dis'
-
-```{r}
-# Convert a DataFrame column to a list
-ls_dis <- as.numeric(as.list(df_crime_train$dis))
-
-#find optimal lambda for Box-Cox transformation 
-bc <- boxcox(ls_dis~ 1, lambda = seq(-2,2,0.1))
-lambda_dis <- bc$x[which.max(bc$y)]
-
-# Apply the Box-Cox transformation
-ls_dis_new = (ls_dis^lambda_dis-1)/lambda_dis
-```
-
-```{r}
-hist(ls_dis_new)
-hist(df_crime_train$dis)
-```
-
-### Box-Cox 'Indus'
-
-```{r}
-# Convert a DataFrame column to a list
-ls_indus <- as.numeric(as.list(df_crime_train$indus))
-
-#find optimal lambda for Box-Cox transformation 
-bc <- boxcox(ls_indus~ 1, lambda = seq(-2,2,0.1))
-lambda_indus <- bc$x[which.max(bc$y)]
-
-# Apply the Box-Cox transformation
-ls_indus_new = (ls_indus^lambda_indus-1)/lambda_indus
-
-
-hist(ls_indus_new )
-hist(df_crime_train$indus)
-```
-
-```{r, include=FALSE}
-#rm(url_git, ls_age, ls_age_new,ls_dis,ls_dis_new)
-```
-
-# Transform 'df_crime_train'
+### Transform 'df_crime_train'
 
 ```{r}
 # Create an empty list to store the transformed columns
@@ -336,8 +265,10 @@ for (col_name in names(df_crime_train)) {
 # Convert the list of transformed columns into a DataFrame
 df_transformed <- as.data.frame(col_transformed)
 ```
-## Gather
 
+### Gather
+
+Examining the variables after applying the Box-Cox transformation
 ```{r}
 # Gather the data into a long format
 data_transformed_long <- gather(df_transformed, key = "Variable", value = "Value")
@@ -346,9 +277,9 @@ ggplot(data_transformed_long, aes(x = Value)) +
   geom_histogram() +
   facet_wrap(~Variable, scales = "free") +
   labs(title = "Histogram of Variables")
-# (dis_t, lstat_t, medv_t, nox_t)
 ```
 
+After examining the histograms, it's evident that the variables 'dis,' 'lstat,' 'medv,' and 'nox' have undergone a transformation resulting in a more normal distribution. Subsequently, these transformed variables will replace their original counterparts in the original dataset. The objective is to assess whether having more normalized variables contributes to the creation of a better model. This replacement aligns with the intention of leveraging the Box-Cox transformation to enhance the normality of the variables, potentially leading to improvements in the model's performance. 
 
 ```{r}
 # Gather the data into a long format
@@ -360,7 +291,7 @@ ggplot(df_long, aes(x = Value)) +
   labs(title = "Histogram of Variables")
 ```
 
-## Consolidate 'df_crime_train' data with 'transformed'
+### Consolidate 'df_crime_train' data with 'transformed'
 
 ```{r}
 # Move 
@@ -387,6 +318,8 @@ result <- cbind(df_crime_train_with_transformed, df_crime_train %>%
 ```
 
 ## Apply Scaling
+
+Additionally, we will normalize the variables using the same scaling technique once again. This step ensures consistency in the treatment of variables and allows us to maintain a standardized scale across the dataset. 
 ```{r}
 # Apply min-max scaling to all three variables
 df_scaled <- result
@@ -405,7 +338,10 @@ ggplot(df_crime_train_with_transformed, aes(x = Value)) +
   labs(title = "Histogram of Variables")
 ```
 
-# 3. **BUILD MODELS**
+Certainly, now that we have completed the necessary data preprocessing steps, including variable transformation and normalization, it's time to proceed with building the models. 
+
+
+# **BUILD MODELS**
 
 **Let us explore three different models including:**
 
@@ -784,7 +720,7 @@ summary(C6_no_transform)
 * AIC of 245.51
 
 
-# 4. **MODEL SELECTION**
+# **MODEL SELECTION**
 
 ## **Selection Criteria to Consider**
 *Simplicity of Model, AIC, and Variable Coefficients
@@ -813,6 +749,11 @@ summary(A6_back_elim)
 ```
 
 ### **Evaluate Selected Binary Logistic Regression Model**
+#### Add the predicted class based on selected model
+```{r}
+df_scaled_classification <- df_scaled
+df_scaled_classification$PREDICTION = predict(A6_back_elim, new = df_scaled_classification)
+```
 
 #### A) accuracy
 
@@ -832,7 +773,7 @@ summary(A6_back_elim)
 
 ### **Predictions for Evaluation Dataset**
 
-## Transform 'df_crime_eval'
+#### Transform 'df_crime_eval' as did for training dataset
 ```{r}
 summary(df_crime_eval)
 ```
@@ -866,7 +807,6 @@ for (col_name in names(df_crime_eval)) {
 df_transformed_eval <- as.data.frame(col_transformed_eval)
 ```
 ```{r}
-# Move 
 df_crime_train_with_transformed_eval <- df_transformed_eval %>%
   dplyr::select(dis, lstat, medv, nox) %>%
   mutate(dis_t = dis, lstat_t = lstat, medv_t = medv, nox_t = nox)%>%
@@ -885,3 +825,9 @@ result_eval <- cbind(df_crime_train_with_transformed_eval, df_crime_eval %>%
 df_scaled_eval <- result_eval
 df_scaled_eval[] <- lapply(result_eval, rescale)
 ```
+
+#### Make Prediction on transformed dataset using selected model from training dataset - Backwards Elimination model A6
+```{r}
+df_scaled_eval$PREDICTION = predict(A6_back_elim, new = df_scaled_eval)
+```
+
