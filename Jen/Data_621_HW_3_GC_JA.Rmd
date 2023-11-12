@@ -411,7 +411,7 @@ ggplot(df_crime_train_with_transformed, aes(x = Value)) +
 
 * A - Backward Elimination with AIC Criterion
 * B - Forward Selection with AIC Criterion
-* C - 
+* C - Forward Selection + Interactions + Non-transformed Variables
 
 ## A - **Backward Elimination with AIC Criterion**
 
@@ -538,7 +538,20 @@ anova(A1_back_elim, A6_back_elim, test="Chi")
 
 ### BEST MODEL: A6_back_elim
 * Predictors: dis_t + medv_t + nox_t + age + rad + tax + ptratio
-* Best AIC of 235.17
+* Best AIC of 215.57
+* Variable Coefficients - As shown below, our model indicates that the crime rate is more likely to be over the median with greater nitrogen oxide concentration (nox), accessibility to radial highways (rad), weighted mean of distances to five Boston employment centers (dis), proportion of owner-occupied units built prior to 1940 (age), median value of owner-occupied homes in 1000s (medv), pupil-teacher ratio by town (ptratio), and less likely to be over the median with greater full-value property-tax rate per 10,000 (tax)
+
+Variable Coefficients:
+
+```{r}
+(A6_beta <- coef(A6_back_elim))
+```
+
+Model Odds Ratios:
+
+```{r}
+format(exp(A6_beta), scientific = F)
+```
 
 ## B - **Forward Selection with AIC Criterion**
 
@@ -624,8 +637,21 @@ summary(B5_forward)
 ### BEST MODEL: B5_forward 
 * Predictors: nox_t + rad + dis_t + age
 * Best AIC of 235.17
+* Intuitive Variable Coefficients - As shown below, the crime rate is more likely to be over the median with greater nitrogen oxide concentration (nox), accessibility to radial highways (rad), weighted mean of distances to five Boston employment centers (dis) and proportion of owner-occupied units built prior to 1940 (age).
 
-## C - **THIRD MODEL**
+Variable Coefficients:
+
+```{r}
+(B5_beta <- coef(B5_forward))
+```
+
+Model Odds Ratios:
+
+```{r}
+format(exp(B5_beta), scientific = F)
+```
+
+## C - **Forward Selection + Interactions + Non-transformed Variables**
 
 ### Correlations between Variables 
 ```{r}
@@ -663,30 +689,148 @@ Compared to the original B5 Model:
 * Only nox_t and rad variable coefficients and the intercept coefficient are significant (p < .05)
 * Adding the interaction term has affected the goodness of fit negatively as not only is it not significant, but the variable coefficients for dis_t and age are no longer significant.
 
-### C2 - **Add Interaction between nox_t & dist_t because of strong negative relationship with each other -AIC 235.17**
+### C2 - **Add Interaction terms between all predictors (excluding nox_t*dis_t) -AIC 236.07**
+Starting out with our Forward Selection Model B5 and adding the interaction terms for all the variables besides the one previously tested above to determine if any interaction terms may be beneficial to the model.
+
 ```{r}
-# Remove                    
 C2_model <- glm(formula = target ~ 
-                    nox_t
-                   + rad
-                + dis_t
-                   + age
+                    nox_t + rad + dis_t + age
+                  + nox_t*rad + nox_t*age
+                  + rad*dis_t + rad*age
+                  + dis_t*age
                    , family = binomial, data = df_scaled)
 
 summary(C2_model)
 ```
 #### **Observations**
-Compared to the original B5 Model:
-* AIC has increased to 237.02 (previously 235.17)
-* Residual Deviance decreased to 225.02 on 460 df (previously 225.17 on 461 df)
-* 4 of 4 variable coefficients and the intercept coefficient are significant (p < .05)
+* AIC has decreased to 236.07 (previously 237.02)
+* Residual Deviance decreased to 216.07 on 456 df (previously 225.02 on 460 df)
+* Interaction term nox_t*rad has a significant variable coefficient with p-value of 0.000541, indicating it could be beneficial to add to our model
+
+### C3 - **Add Interaction term with smallest p-value (nox_t*rad) -AIC 236.69**
+Starting out with our Forward Selection Model B5 again, and adding the interaction term between nox_t and rad as our previous model C2 indicated the variable coefficient for this interaction was very small.
 
 ```{r}
+C3_model <- glm(formula = target ~ 
+                    nox_t + rad + dis_t + age
+                  + nox_t*rad
+                   , family = binomial, data = df_scaled)
 
+summary(C3_model)
 ```
 
+#### **Observations**
+* AIC has increased to 236.69 (previously 236.07)
+* Residual Deviance increased to 224.69 on 460 df (previously 216.07 on 456 df)
+* Interaction term nox_t*rad is not significant in this model where the other interaction terms were removed. Additionally, the variable coefficient for age is no longer significant and since the AIC increased, we determine that including the interaction term negatively impacts our model fit.
+
+
+### C4 - **Original Model without Transformations -AIC 244.17**
+We have been using the transformed version of the data in df_scaled, but would the results be similar if we used the original dataset?
+
+```{r}
+C4_no_transform <- glm(formula = target ~ nox
+                   + rad
+                   + dis
+                   + age
+                   , family = binomial, data = df_crime_train)
+
+summary(C4_no_transform)
+```
+#### **Observations**
+Compared to the B5 Model using Transformed Variables:
+* AIC has increased to 244.17 (previously 235.17)
+* Residual Deviance increased to 234.17 on 461 df (previously 225.17 on 461 df)
+* Dis and Age variable coefficients are not significant
+
+### C5 - **Remove age variable -AIC 245.96**
+If we were doing forward selection on the original data then we likely would not have added the age variable as a predictor as the dis variable may not have been significant when added before it.  So let's see what our model looks like using nox, rad and dis and excluding age.
+
+```{r}
+# Removed age
+C5_no_transform <- glm(formula = target ~ nox
+                   + rad
+                   + dis
+                   , family = binomial, data = df_crime_train)
+
+summary(C5_no_transform)
+```
+
+#### **Observations**
+* AIC has increased to 245.96 (previously 244.17)
+* Residual Deviance increased to 237.96 on 462 df (previously 234.17 on 461 df)
+* Dis variable coefficient is still not significant
+
+### C6 - **Remove dis variable -AIC 245.51**
+If we were doing forward selection on the original data then we may also have to exclude the dis variable.
+
+```{r}
+# Removed age and dis
+C6_no_transform <- glm(formula = target ~ nox
+                   + rad
+                   , family = binomial, data = df_crime_train)
+
+summary(C6_no_transform)
+```
+
+#### **Observations**
+* AIC has decreased to 245.51 (previously 245.96)
+* Residual Deviance increased to 239.51 on 463 df (previously 237.96 on 462 df)
+* All variable coefficients and intercept are significant
+
+### BEST MODEL: C6_no_transform 
+* Predictors: nox_t + rad
+* Forward Selection model using original dataset rather than the transformed dataset
+* AIC of 245.51
+
+
 # 4. **MODEL SELECTION**
+
 ## **Selection Criteria to Consider**
+*Simplicity of Model, AIC, and Variable Coefficients
+
+### Backward Elimination Model - A6_back_elim
+* Predictors: dis_t + medv_t + nox_t + age + rad + tax + ptratio
+* Best AIC of 215.57
+* Variable Coefficients - As shown below, our model indicates that the crime rate is more likely to be over the median with greater nitrogen oxide concentration (nox), accessibility to radial highways (rad), weighted mean of distances to five Boston employment centers (dis), proportion of owner-occupied units built prior to 1940 (age), median value of owner-occupied homes in 1000s (medv), pupil-teacher ratio by town (ptratio), and less likely to be over the median with greater full-value property-tax rate per 10,000 (tax)
+
+### Forward Selection Model - B5_forward 
+* Predictors: nox_t + rad + dis_t + age
+* Best AIC of 235.17
+* Intuitive Variable Coefficients - the crime rate is more likely to be over the median with greater nitrogen oxide concentration (nox), accessibility to radial highways (rad), weighted mean of distances to five Boston employment centers (dis) and proportion of owner-occupied units built prior to 1940 (age).
+
+### Forward Selection Model on Untransformed Data: C6_no_transform 
+* Predictors: nox_t + rad
+* Forward Selection model using original dataset rather than the transformed dataset
+* AIC of 245.51
+
+### **Selected Model**
+We chose the Backward Elimination Model using the transformed dataset (A6_back_elim) as it has the lowest AIC and the variable coefficients make sense.  Although the other two models are simpler given they have less predictors, they do have higher AICs in comparison. 
+
+### **Regression Summary for Selected Model
+```{r}
+summary(A6_back_elim)
+```
+
+### **Evaluate Selected Binary Logistic Regression Model**
+
+#### A) accuracy
+
+#### B) classification error rate
+
+#### C) precision
+
+#### D) sensitivity
+
+#### E) specificity
+
+#### F) F1 score
+
+#### G) AUC
+
+#### H) confusion matrix
+
+### **Predictions for Evaluation Dataset**
 
 ## Transform 'df_crime_eval'
 ```{r}
