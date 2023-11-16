@@ -1,0 +1,854 @@
+---
+title: 'DATA 621: BUSINESS ANALYTICS AND DATA MINING HOMEWORK#3: LOGISTIC REGRESSION'
+author: "Group 2 - Gabriel Campos, Melissa Bowman, Alexander Khaykin, & Jennifer Abinette"
+date: "Last edited `r format(Sys.time(), '%B %d, %Y')`"
+output:
+  pdf_document:
+    latex_engine: xelatex
+    toc: yes
+    toc_depth: 4
+    number_sections: yes
+    highlight: tango
+  geometry: left=0.5cm,right=0.5cm,top=1cm,bottom=2cm
+  html_document:
+    df_print: paged
+  word_document:
+    toc: yes
+    toc_depth: '4'
+urlcolor: blue
+---
+\newpage
+**Overview**
+
+In this homework assignment, you will explore, analyze and model a data set containing information on
+crime for various neighborhoods of a major city. Each record has a response variable indicating whether
+or not the crime rate is above the median crime rate (1) or not (0).
+
+Your objective is to build a *binary logistic regression model* on the training data set to predict whether
+the neighborhood will be at risk for high crime levels. You will provide classifications and probabilities
+for the evaluation data set using your binary logistic regression model. You can only use the variables
+given to you (or, variables that you derive from the variables provided). Below is a short description of
+the variables of interest in the data set:
+
+* zn: proportion of residential land zoned for large lots (over 25000 square feet) (predictor variable)
+* indus: proportion of non-retail business acres per suburb (predictor variable)
+* chas: a dummy var. for whether the suburb borders the Charles River (1) or not (0) (predictor variable)
+* nox: nitrogen oxides concentration (parts per 10 million) (predictor variable)
+* rm: average number of rooms per dwelling (predictor variable)
+* age: proportion of owner-occupied units built prior to 1940 (predictor variable)
+* dis: weighted mean of distances to five Boston employment centers (predictor variable)
+* rad: index of accessibility to radial highways (predictor variable)
+* tax: full-value property-tax rate per $10,000 (predictor variable)
+* ptratio: pupil-teacher ratio by town (predictor variable)
+* lstat: lower status of the population (percent) (predictor variable)
+* medv: median value of owner-occupied homes in $1000s (predictor variable)
+* **target: whether the crime rate is above the median crime rate (1) or not (0) (response variable)**
+
+**Deliverables:**
+
+* A write-up submitted in PDF format. Your write-up should have four sections. Each one is described
+below. You may assume you are addressing me as a fellow data scientist, so do not need to shy away
+from technical details.
+* Assigned prediction (probabilities, classifications) for the evaluation data set. Use 0.5 threshold.
+Include your R statistical programming code in an Appendix.
+
+**Write Up:**
+
+**1. DATA EXPLORATION (25 Points)**
+Describe the size and the variables in the crime training data set. Consider that too much detail will cause
+a manager to lose interest while too little detail will make the manager consider that you aren’t doing
+your job. Some suggestions are given below. Please do NOT treat this as a check list of things to do to
+complete the assignment. You should have your own thoughts on what to tell the boss. These are just
+ideas.
+a. Mean / Standard Deviation / Median
+b. Bar Chart or Box Plot of the data
+c. Is the data correlated to the target variable (or to other variables?)
+d. Are any of the variables missing and need to be imputed/“fixed”?
+
+**2. DATA PREPARATION (25 Points)**
+Describe how you have transformed the data by changing the original variables or creating new variables.
+If you did transform the data or create new variables, discuss why you did this. Here are some possible
+transformations.
+a. Fix missing values (maybe with a Mean or Median value)
+b. Create flags to suggest if a variable was missing
+c. Transform data by putting it into buckets
+d. Mathematical transforms such as log or square root (or, use Box-Cox)
+e. Combine variables (such as ratios or adding or multiplying) to create new variables
+
+**3. BUILD MODELS (25 Points)**
+Using the training data, build at least three different binary logistic regression models, using different
+variables (or the same variables with different transformations). You may select the variables manually,
+use an approach such as Forward or Stepwise, use a different approach, or use a combination of
+techniques. Describe the techniques you used. If you manually selected a variable for inclusion into the
+model or exclusion into the model, indicate why this was done.
+Be sure to explain how you can make inferences from the model, as well as discuss other relevant model
+output. Discuss the coefficients in the models, do they make sense? Are you keeping the model even
+though it is counter intuitive? Why? The boss needs to know.
+
+**4. SELECT MODELS (25 Points)**
+Decide on the criteria for selecting the best binary logistic regression model. Will you select models with
+slightly worse performance if it makes more sense or is more parsimonious? Discuss why you selected
+your model.
+* For the binary logistic regression model, will you use a metric such as log likelihood, AIC, ROC curve,
+etc.? Using the training data set, evaluate the binary logistic regression model based on (a) accuracy, (b)
+classification error rate, (c) precision, (d) sensitivity, (e) specificity, (f) F1 score, (g) AUC, and (h)
+confusion matrix. Make predictions using the evaluation data set
+
+\newpage
+
+# **DATA EXPLORATION**
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+library(dplyr)
+library(tidyr)
+library(tidyverse)
+library(ggplot2)
+library(GGally)
+library(Hmisc)
+library(corrplot)
+library(PerformanceAnalytics)
+library(scales)
+library(MASS)
+library(caret)
+```
+
+
+## **Load the data**
+```{r data-import}
+url_git<-
+  "https://raw.githubusercontent.com/GitableGabe/Data621_Data/main/"
+
+```
+
+```{r}
+
+df_crime_eval <- 
+  read.csv(paste0(url_git,"crime-evaluation-data_modified.csv"))
+head(df_crime_eval,n=10)
+
+```
+
+
+```{r}
+df_crime_eval
+```
+
+
+```{r}
+df_crime_train <- 
+  read.csv(paste0(url_git,"crime-training-data_modified.csv"))
+head(df_crime_train,n=10)
+```
+
+```{r}
+df_crime_eval[is.na(df_crime_eval)]
+```
+
+```{r}
+df_crime_train[is.na(df_crime_train)]
+```
+### **Data Summary**
+
+```{r}
+summary(df_crime_train)
+```
+Upon a comprehensive examination of the dataset, it is noteworthy that there are no missing values, underscoring the completeness of the provided data. This absence of missing values is a positive indicator, as it eliminates the need for imputation or data filling techniques that might have otherwise been necessary.
+
+Also, the examining the means and medians of the variables aids in understanding the distribution's symmetry, identifying outliers, assessing data consistency, and simplifying the interpretation of central tendency measures through alignment between the mean and median.
+
+### **Correlation Matrix***
+
+```{r}
+# Create a correlation matrix for all variables
+(matrix_cor <- cor(df_crime_train))
+```
+Taking a glance at the correlation matrix of 'df_crime_train,' it is evident that the highly correlated variables are 'rad' and 'tax,' exhibiting a strong correlation of 91%. Considering this substantial correlation, there may be a need to explore the possibility of combining these variables.
+
+Additionally, when assessing the correlation of variables to the target, the most correlated variables to the least correlated variables are as follows: nox (72%), age (63%), rad (62%), dis (62%), tax (61%), indus (60%), lstat (47%), zn (43%), medv (27%), ptratio (25%), rm (15%), and chas (8%).
+
+
+# **DATA PREPARATION**
+
+## **Model 1**
+
+Examining the models without transforming or prepping the data provides us with a baseline to assess whether transforming or prepping the data will enhance the model.
+```{r}
+model_1 <- glm(formula = target ~ ., family = binomial, data = df_crime_train)
+
+summary(model_1)
+```
+
+
+In the data preparation phase, we assessed the distribution of variables to determine whether they demonstrated a normalized distribution. Ensuring a normal distribution for variables in a regression model holds paramount importance for various reasons. Firstly, adherence to the assumption of normality is crucial because many statistical techniques, including those employed in regression analysis, rely on this assumption for their validity. Secondly, achieving normality in variables contributes to more accurate and efficient parameter estimates, enhancing the overall performance of the model. Furthermore, statistical inferences, such as confidence intervals and hypothesis tests, are based on normality assumptions, emphasizing the necessity of a normal distribution. Normality is also pivotal in the analysis of residuals, as normally distributed residuals signify a well-fitted model. The robustness of statistical methods is bolstered when data approximates a normal distribution, making the results more dependable and less sensitive to outliers. Lastly, normality simplifies the interpretability of coefficients, facilitating a clearer understanding of the impact of predictors on the outcome.
+```{r}
+# Gather the data into a long format
+df_long <- gather(df_crime_train, key = "Variable", value = "Value")
+
+ggplot(df_long, aes(x = Value)) +
+  geom_histogram() +
+  facet_wrap(~Variable, scales = "free") +
+  labs(title = "Histogram of Variables")
+```
+
+
+
+### **Scale**
+
+The variables currently lack normalization, and it is imperative to address this issue. To initiate the correction process, our first step involves applying normalization to the variables by scaling them. This entails transforming the variables to a standardized scale. Normalizing the scale of variables is particularly crucial in logistic regression. In logistic regression, the scale of the predictor variables influences the parameter estimates, and having variables on different scales might lead to uneven contributions to the model. Normalizing the scale helps ensure that each variable contributes proportionally to the logistic regression model, thereby improving the stability and interpretability of the model. This preliminary normalization step will allow us to assess whether achieving a standardized scale enhances the model's performance before further adjustments are made.
+
+```{r}
+# Apply min-max scaling to all three variables
+df_scaled <- df_crime_train
+df_scaled[] <- lapply(df_crime_train, rescale)
+```
+
+
+```{r}
+# Gather the data into a long format
+df_long_scaled <- gather(df_scaled, key = "Variable", value = "Value")
+
+ggplot(df_long_scaled, aes(x = Value)) +
+  geom_histogram() +
+  facet_wrap(~Variable, scales = "free") +
+  labs(title = "Histogram of Variables")
+```
+
+Checking correlation of scaled varibles 
+
+```{r}
+# Create a correlation matrix for all variables
+(matrix_cor <- cor(df_scaled))
+```
+## **Model 2**
+
+
+```{r}
+model_2 <- glm(formula = target ~ ., family = binomial, data = df_scaled)
+
+(summary(model_2))
+```
+
+Scaling the variables did not yield improvements in the model performance. However, we will explore the potential benefits of applying the Box-Cox transformation to achieve normality in the variable distributions. The Box-Cox transformation is a statistical technique that aims to stabilize the variance and make the data more closely approximate a normal distribution. Specifically, it involves raising each data point to a power, with the power determined during the transformation process. The goal is to identify the power that maximizes the normality of the data. By doing so, Box-Cox can address issues such as skewed distributions and unequal variances, making the variables more amenable to statistical methods that assume normality. Implementing the Box-Cox transformation serves as a valuable step in preparing the variables for logistic regression, potentially enhancing the model's performance by aligning with the underlying assumptions of the chosen statistical approach.
+
+### Box-Cox
+
+```{r}
+df_crime_train$age <- as.numeric(df_crime_train$age)
+```
+
+
+### Transform 'df_crime_train'
+
+```{r}
+# Create an empty list to store the transformed columns
+col_transformed <- list()
+
+# Define the names of columns to exclude from transformation because there variables response must be positive 
+col_exclude <- c("target", "zn", "chas")  
+
+# Iterate through the columns in df_crime_train
+for (col_name in names(df_crime_train)) {
+  # Convert the column to a list and check if it's numeric and not in the exclude list
+  if (is.numeric(df_crime_train[[col_name]]) && !(col_name %in% col_exclude)) {
+    col_list <- as.numeric(as.list(df_crime_train[[col_name]]))
+    
+    # Find optimal lambda for Box-Cox transformation
+    bc <- boxcox(col_list ~ 1, lambda = seq(-2, 2, 0.1))
+    lambda_col <- bc$x[which.max(bc$y)]
+    
+    # Apply the Box-Cox transformation
+    col_new <- ifelse(col_list==0, log(col_list), (col_list^lambda_col - 1) / lambda_col)
+    
+    # Store the transformed column in the list
+    col_transformed[[col_name]] <- col_new
+  }
+}
+
+# Convert the list of transformed columns into a DataFrame
+df_transformed <- as.data.frame(col_transformed)
+```
+
+### Gather
+
+Examining the variables after applying the Box-Cox transformation
+```{r}
+# Gather the data into a long format
+data_transformed_long <- gather(df_transformed, key = "Variable", value = "Value")
+
+ggplot(data_transformed_long, aes(x = Value)) +
+  geom_histogram() +
+  facet_wrap(~Variable, scales = "free") +
+  labs(title = "Histogram of Variables")
+```
+
+After examining the histograms, it's evident that the variables 'dis,' 'lstat,' 'medv,' and 'nox' have undergone a transformation resulting in a more normal distribution. Subsequently, these transformed variables will replace their original counterparts in the original dataset. The objective is to assess whether having more normalized variables contributes to the creation of a better model. This replacement aligns with the intention of leveraging the Box-Cox transformation to enhance the normality of the variables, potentially leading to improvements in the model's performance. 
+
+```{r}
+# Gather the data into a long format
+df_long <- gather(df_crime_train, key = "Variable", value = "Value")
+
+ggplot(df_long, aes(x = Value)) +
+  geom_histogram() +
+  facet_wrap(~Variable, scales = "free") +
+  labs(title = "Histogram of Variables")
+```
+
+### Consolidate 'df_crime_train' data with 'transformed'
+
+```{r}
+# Move 
+df_crime_train_with_transformed <- df_transformed %>%
+  dplyr::select(dis, lstat, medv, nox) %>%
+  mutate(dis_t = dis, lstat_t = lstat, medv_t = medv, nox_t = nox)%>%
+                dplyr::select(-c(dis, lstat, medv, nox))
+```
+
+### Combining Results
+
+```{r}
+# Combine data frames by adding columns
+result <- cbind(df_crime_train_with_transformed, df_crime_train %>%
+                dplyr::select(-c(dis, lstat, medv, nox)))
+```
+
+
+## Correlation Matrix with 'df_crime_train'
+
+```{r}
+# Create a correlation matrix for all variables
+(matrix_cor <- cor(result))
+```
+
+## Apply Scaling
+
+Additionally, we will normalize the variables using the same scaling technique once again. This step ensures consistency in the treatment of variables and allows us to maintain a standardized scale across the dataset. 
+```{r}
+# Apply min-max scaling to all three variables
+df_scaled <- result
+df_scaled[] <- lapply(result, rescale)
+```
+
+## Gather Scaled Data
+
+```{r}
+# Gather the data into a long format
+df_crime_train_with_transformed <- gather(df_scaled, key = "Variable", value = "Value")
+
+ggplot(df_crime_train_with_transformed, aes(x = Value)) +
+  geom_histogram() +
+  facet_wrap(~Variable, scales = "free") +
+  labs(title = "Histogram of Variables")
+```
+
+Certainly, now that we have completed the necessary data preprocessing steps, including variable transformation and normalization, it's time to proceed with building the models. 
+
+
+# **BUILD MODELS**
+
+**Let us explore three different models including:**
+
+* A - Backward Elimination with AIC Criterion
+* B - Forward Selection with AIC Criterion
+* C - Forward Selection + Interactions + Non-transformed Variables
+
+## A - **Backward Elimination with AIC Criterion**
+
+### A1 - **ALL Variables -AIC 222.37**
+
+```{r}
+# Including all variables
+A1_back_elim <- glm(formula = target ~ ., family = binomial (link="logit"), data = df_scaled)
+
+summary(A1_back_elim)
+```
+
+```{r}
+drop1(A1_back_elim,test="Chi")
+```
+
+#### **Observations**
+* AIC of 222.37 
+* Residual Deviance of 196.37 on 453 df
+* 6 of 12 variable coefficients and the intercept coefficient are significant (p < .05)
+* Indus variable has largest p-value of .76
+
+### A2 - **Removed Variable (indus) with Largest P-Value -AIC 220.46**
+
+```{r}
+# Removed variables: indus
+A2_back_elim <- glm(formula = target ~ dis_t 
+                   + medv_t + nox_t + zn
+                   + lstat_t + chas + rm 
+                   + age + rad + tax
+                   + ptratio
+                   , family = binomial, data = df_scaled)
+
+summary(A2_back_elim)
+```
+
+#### **Observations**
+* AIC decreased to 220.46 (previously 222.37)
+* Residual Deviance increased to 196.46 on 454 df (previously 196.37 on 453 df)
+* 6 of 11 variable coefficients and the intercept coefficient are significant (p < .05)
+* lstat_t variable has largest p-value of .757
+
+### A3 - **Removed Next Variable with Largest P-Value (lstat_t) -AIC 218.56**
+
+```{r}
+# Removed variables: indus, lstat_t
+A3_back_elim <- glm(formula = target ~ dis_t 
+                   + medv_t + nox_t + zn
+                   + chas + rm 
+                   + age + rad + tax
+                   + ptratio
+                   , family = binomial, data = df_scaled)
+
+summary(A3_back_elim)
+```
+
+#### **Observations**
+* AIC decreased to 218.56 (previously 220.46)
+* Residual Deviance increased to 196.56 on 455 df (previously 196.46 on 454 df)
+* 6 of 10 variable coefficients and the intercept coefficient are significant (p < .05)
+* rm variable has largest p-value of .58
+
+### A4 - **Removed Next Variable with Largest P-Value (rm) -AIC 216.86**
+
+```{r}
+# Removed variables: indus, lstat_t, rm
+A4_back_elim <- glm(formula = target ~ dis_t 
+                   + medv_t + nox_t + zn
+                   + chas 
+                   + age + rad + tax
+                   + ptratio
+                   , family = binomial, data = df_scaled)
+
+summary(A4_back_elim)
+```
+
+#### **Observations**
+* AIC decreased to 216.86 (previously 218.56)
+* Residual Deviance increased to 196.86 on 456 df (previously 196.56 on 455 df)
+* Same 6 variable coefficients of 9 and the intercept coefficient are significant (p < .05)
+* zn variable has largest p-value of .399
+
+### A5 - **Removed Next Variable with Largest P-Value (zn) -AIC 215.64**
+
+```{r}
+# Removed variables: indus, lstat_t, rm, zn
+A5_back_elim <- glm(formula = target ~ dis_t 
+                   + medv_t + nox_t
+                   + chas 
+                   + age + rad + tax
+                   + ptratio
+                   , family = binomial, data = df_scaled)
+
+summary(A5_back_elim)
+```
+
+#### **Observations**
+* AIC decreased to 215.64 (previously 216.86)
+* Residual Deviance increased to 197.64 on 457 df (previously 196.86 on 456 df)
+* Same 6 of 8 variable coefficients and the intercept coefficient are significant (p < .05)
+* chas variable has largest p-value of .170
+
+### A6 - **Removed Next Variable with Largest P-Value (chas) -AIC 215.57**
+
+```{r}
+# Removed variables: indus, lstat_t, rm, zn, chas
+A6_back_elim <- glm(formula = target ~ dis_t 
+                   + medv_t + nox_t
+                   + age + rad + tax
+                   + ptratio
+                   , family = binomial, data = df_scaled)
+
+summary(A6_back_elim)
+```
+
+#### **Observations**
+* AIC decreased to 215.57 (previously 215.64)
+* Residual Deviance increased to 199.57 on 458 df (previously 197.64 on 457 df)
+* 7 of 7 variable coefficients and the intercept coefficient are significant (p < .05)
+
+```{r}
+anova(A1_back_elim, A6_back_elim, test="Chi")
+```
+
+### BEST MODEL: A6_back_elim
+* Predictors: dis_t + medv_t + nox_t + age + rad + tax + ptratio
+* Best AIC of 215.57
+* Variable Coefficients - As shown below, our model indicates that the crime rate is more likely to be over the median with greater nitrogen oxide concentration (nox), accessibility to radial highways (rad), weighted mean of distances to five Boston employment centers (dis), proportion of owner-occupied units built prior to 1940 (age), median value of owner-occupied homes in 1000s (medv), pupil-teacher ratio by town (ptratio), and less likely to be over the median with greater full-value property-tax rate per 10,000 (tax)
+
+Variable Coefficients:
+
+```{r}
+(A6_beta <- coef(A6_back_elim))
+```
+
+Model Odds Ratios:
+
+```{r}
+format(exp(A6_beta), scientific = F)
+```
+
+## B - **Forward Selection with AIC Criterion**
+
+### B1 - **Start with Variable nox_t with Lowest P-Value  -AIC 295.88**
+```{r}
+B1_forward <- glm(formula = target ~ nox_t  
+                   , family = binomial, data = df_scaled)
+
+summary(B1_forward)
+```
+
+#### **Observations**
+* AIC of 295.88
+* Residual Deviance of 291.88 on 464 df
+* 1 of 1 variable coefficients and the intercept coefficient are significant (p < .05)
+* Rad variable has next smallest p-value
+
+### B2 - **Add Variable with Next Lowest P-Value (rad)  -AIC 243.42**
+```{r}
+B2_forward <- glm(formula = target ~ nox_t  
+                   + rad
+                   , family = binomial, data = df_scaled)
+
+summary(B2_forward)
+```
+
+#### **Observations**
+* AIC decreased to 243.42 (previously 295.88)
+* Residual Deviance decreased to 237.42 on 463 df (previously 291.88 on 464 df)
+* 2 of 2 variable coefficients and the intercept coefficient are significant (p < .05)
+* dist_t variable has next smallest p-value
+
+### B3 - **Add Variable with Next Lowest P-Value (dist_t)  -AIC 237.33**
+```{r}
+B3_forward <- glm(formula = target ~ nox_t
+                   + rad
+                   + dis_t
+                   , family = binomial, data = df_scaled)
+
+summary(B3_forward)
+```
+#### **Observations**
+* AIC decreased to 237.33 (previously 243.42)
+* Residual Deviance decreased to 229.33 on 462 df (previously 237.42 on 463 df)
+* 3 of 3 variable coefficients and the intercept coefficient are significant (p < .05)
+* ptratio variable has next smallest p-value
+
+### B4 - **Add Variable with Next Lowest P-Value (ptratio)  -AIC 237.74**
+```{r}
+B4_forward <- glm(formula = target ~ nox_t
+                   + rad
+                   + dis_t
+                   + ptratio
+                   , family = binomial, data = df_scaled)
+
+summary(B4_forward)
+```
+
+#### **Observations**
+* AIC increased to 237.74 (previously 237.33)
+* Residual Deviance decreased to 227.74 on 461 df (previously 229.33 on 462 df)
+* 3 of 4 variable coefficients and the intercept coefficient are significant (p < .05)
+* age variable has next smallest p-value
+
+### B5 - **Add Variable with Next Lowest P-Value (age), Exclude ptratio  -AIC 235.17**
+Have not included ptratio as the previous model B4 demonstrated that including this variable decreased the model fit as the AIC increased rather than decreased.
+
+```{r}
+B5_forward <- glm(formula = target ~ nox_t
+                   + rad
+                   + dis_t
+                   + age
+                   , family = binomial, data = df_scaled)
+
+summary(B5_forward)
+```
+
+#### **Observations**
+* AIC has decreased to 235.17 (previously 237.74 and 237.33)
+* Residual Deviance decreased to 225.17 df (previously 227.74 on 461 df)
+* 4 of 4 variable coefficients and the intercept coefficient are significant (p < .05)
+
+### BEST MODEL: B5_forward 
+* Predictors: nox_t + rad + dis_t + age
+* Best AIC of 235.17
+* Intuitive Variable Coefficients - As shown below, the crime rate is more likely to be over the median with greater nitrogen oxide concentration (nox), accessibility to radial highways (rad), weighted mean of distances to five Boston employment centers (dis) and proportion of owner-occupied units built prior to 1940 (age).
+
+Variable Coefficients:
+
+```{r}
+(B5_beta <- coef(B5_forward))
+```
+
+Model Odds Ratios:
+
+```{r}
+format(exp(B5_beta), scientific = F)
+```
+
+## C - **Forward Selection + Interactions + Non-transformed Variables**
+
+### Correlations between Variables 
+```{r}
+cor(df_scaled, y=df_scaled$target)
+```
+
+
+```{r}
+df_scaled %>% 
+  cor(.,) %>% 
+  corrplot(., method = "ellipse", type = "lower",addCoef.col = 'black', diag = FALSE)
+```
+
+```{r}
+cor(df_scaled, y=df_scaled$nox_t)
+```
+### C1 - **Add Interaction between nox_t & dist_t because of strong negative relationship with each other -AIC 237.02**
+Starting out with our Forward Selection Model B5 and adding the interaction term for nox_t & dis_t as they have a correlation of -.877.
+
+```{r}
+C1_model <- glm(formula = target ~ 
+                    nox_t
+                   + rad
+                + dis_t
+                   + age
+                  + nox_t*dis_t
+                   , family = binomial, data = df_scaled)
+
+summary(C1_model)
+```
+#### **Observations**
+Compared to the original B5 Model:
+* AIC has increased to 237.02 (previously 235.17)
+* Residual Deviance decreased to 225.02 on 460 df (previously 225.17 on 461 df)
+* Only nox_t and rad variable coefficients and the intercept coefficient are significant (p < .05)
+* Adding the interaction term has affected the goodness of fit negatively as not only is it not significant, but the variable coefficients for dis_t and age are no longer significant.
+
+### C2 - **Add Interaction terms between all predictors (excluding nox_t x dis_t) -AIC 236.07**
+Starting out with our Forward Selection Model B5 and adding the interaction terms for all the variables besides the one previously tested above to determine if any interaction terms may be beneficial to the model.
+
+```{r}
+C2_model <- glm(formula = target ~ 
+                    nox_t + rad + dis_t + age
+                  + nox_t*rad + nox_t*age
+                  + rad*dis_t + rad*age
+                  + dis_t*age
+                   , family = binomial, data = df_scaled)
+
+summary(C2_model)
+```
+#### **Observations**
+* AIC has decreased to 236.07 (previously 237.02)
+* Residual Deviance decreased to 216.07 on 456 df (previously 225.02 on 460 df)
+* Interaction term nox_t*rad has a significant variable coefficient with p-value of 0.000541, indicating it could be beneficial to add to our model
+
+### C3 - **Add Interaction term with smallest p-value (nox_t x rad) -AIC 236.69**
+Starting out with our Forward Selection Model B5 again, and adding the interaction term between nox_t and rad as our previous model C2 indicated the variable coefficient for this interaction was very small.
+
+```{r}
+C3_model <- glm(formula = target ~ 
+                    nox_t + rad + dis_t + age
+                  + nox_t*rad
+                   , family = binomial, data = df_scaled)
+
+summary(C3_model)
+```
+
+#### **Observations**
+* AIC has increased to 236.69 (previously 236.07)
+* Residual Deviance increased to 224.69 on 460 df (previously 216.07 on 456 df)
+* Interaction term nox_t*rad is not significant in this model where the other interaction terms were removed. Additionally, the variable coefficient for age is no longer significant and since the AIC increased, we determine that including the interaction term negatively impacts our model fit.
+
+
+### C4 - **Original Model without Transformations -AIC 244.17**
+We have been using the transformed version of the data in df_scaled, but would the results be similar if we used the original dataset?
+
+```{r}
+C4_no_transform <- glm(formula = target ~ nox
+                   + rad
+                   + dis
+                   + age
+                   , family = binomial, data = df_crime_train)
+
+summary(C4_no_transform)
+```
+#### **Observations**
+Compared to the B5 Model using Transformed Variables:
+* AIC has increased to 244.17 (previously 235.17)
+* Residual Deviance increased to 234.17 on 461 df (previously 225.17 on 461 df)
+* Dis and Age variable coefficients are not significant
+
+### C5 - **Remove age variable -AIC 245.96**
+If we were doing forward selection on the original data then we likely would not have added the age variable as a predictor as the dis variable may not have been significant when added before it.  So let's see what our model looks like using nox, rad and dis and excluding age.
+
+```{r}
+# Removed age
+C5_no_transform <- glm(formula = target ~ nox
+                   + rad
+                   + dis
+                   , family = binomial, data = df_crime_train)
+
+summary(C5_no_transform)
+```
+
+#### **Observations**
+* AIC has increased to 245.96 (previously 244.17)
+* Residual Deviance increased to 237.96 on 462 df (previously 234.17 on 461 df)
+* Dis variable coefficient is still not significant
+
+### C6 - **Remove dis variable -AIC 245.51**
+If we were doing forward selection on the original data then we may also have to exclude the dis variable.
+
+```{r}
+# Removed age and dis
+C6_no_transform <- glm(formula = target ~ nox
+                   + rad
+                   , family = binomial, data = df_crime_train)
+
+summary(C6_no_transform)
+```
+
+#### **Observations**
+* AIC has decreased to 245.51 (previously 245.96)
+* Residual Deviance increased to 239.51 on 463 df (previously 237.96 on 462 df)
+* All variable coefficients and intercept are significant
+
+### BEST MODEL: C6_no_transform 
+* Predictors: nox_t + rad
+* Forward Selection model using original dataset rather than the transformed dataset
+* AIC of 245.51
+
+
+# **MODEL SELECTION**
+
+## **Selection Criteria to Consider**
+*Simplicity of Model, AIC, and Variable Coefficients
+
+### Backward Elimination Model - A6_back_elim
+* Predictors: dis_t + medv_t + nox_t + age + rad + tax + ptratio
+* Best AIC of 215.57
+* Variable Coefficients - As shown below, our model indicates that the crime rate is more likely to be over the median with greater nitrogen oxide concentration (nox), accessibility to radial highways (rad), weighted mean of distances to five Boston employment centers (dis), proportion of owner-occupied units built prior to 1940 (age), median value of owner-occupied homes in 1000s (medv), pupil-teacher ratio by town (ptratio), and less likely to be over the median with greater full-value property-tax rate per 10,000 (tax)
+
+### Forward Selection Model - B5_forward 
+* Predictors: nox_t + rad + dis_t + age
+* Best AIC of 235.17
+* Intuitive Variable Coefficients - the crime rate is more likely to be over the median with greater nitrogen oxide concentration (nox), accessibility to radial highways (rad), weighted mean of distances to five Boston employment centers (dis) and proportion of owner-occupied units built prior to 1940 (age).
+
+### Forward Selection Model on Untransformed Data: C6_no_transform 
+* Predictors: nox_t + rad
+* Forward Selection model using original dataset rather than the transformed dataset
+* AIC of 245.51
+
+## **Selected Model**
+We chose the Backward Elimination Model using the transformed dataset (A6_back_elim) as it has the lowest AIC and the variable coefficients make sense.  Although the other two models are simpler given they have less predictors, they do have higher AICs in comparison. 
+
+### **Regression Summary for Selected Model**
+```{r}
+summary(A6_back_elim)
+```
+
+## **Evaluate Selected Binary Logistic Regression Model**
+
+```{r}
+# Add the predicted class based on selected model
+df_scaled_classification <- df_scaled
+df_scaled_classification$PRED = predict(A6_back_elim, new = df_scaled_classification, type="response")
+df_scaled_classification$PRED_CLASS <- ifelse(df_scaled_classification$PRED > 0.5, 1, 0)
+```
+
+```{r}
+table(df_scaled_classification$PRED_CLASS, df_scaled_classification$target)
+```
+
+### **Confusion Matrix & Statistics**
+
+```{r}
+ls_class <- relevel(factor(df_scaled_classification$target), ref = "1") ## changes it from the default ref of 0
+ls_scr_class <- relevel(factor(df_scaled_classification$PRED_CLASS), ref = "1")
+
+confusionMatrix(data=ls_scr_class, reference = ls_class)
+```
+
+### **ROC Curve & AUC**
+
+```{r}
+library(pROC)
+roc(as.numeric(ls_class), as.numeric(ls_scr_class), plot = TRUE, print.auc = TRUE)
+```
+
+
+
+## **Predictions for Evaluation Dataset**
+
+### Transform 'df_crime_eval' as did for training dataset
+
+```{r}
+summary(df_crime_eval)
+```
+
+```{r}
+# Create an empty list to store the transformed columns
+col_transformed_eval <- list()
+
+# Define the names of columns to exclude from transformation because there variables response must be positive 
+col_exclude <- c("zn", "chas")  
+
+# Iterate through the columns in df_crime_eval
+for (col_name in names(df_crime_eval)) {
+  # Convert the column to a list and check if it's numeric and not in the exclude list
+  if (is.numeric(df_crime_eval[[col_name]]) && !(col_name %in% col_exclude)) {
+    col_list <- as.numeric(as.list(df_crime_eval[[col_name]]))
+    
+    # Find optimal lambda for Box-Cox transformation
+    bc <- boxcox(col_list ~ 1, lambda = seq(-2, 2, 0.1))
+    lambda_col <- bc$x[which.max(bc$y)]
+    
+    # Apply the Box-Cox transformation
+    col_new <- ifelse(col_list==0, log(col_list), (col_list^lambda_col - 1) / lambda_col)
+    
+    # Store the transformed column in the list
+    col_transformed_eval[[col_name]] <- col_new
+  }
+}
+
+# Convert the list of transformed columns into a DataFrame
+df_transformed_eval <- as.data.frame(col_transformed_eval)
+```
+```{r}
+df_crime_train_with_transformed_eval <- df_transformed_eval %>%
+  dplyr::select(dis, lstat, medv, nox) %>%
+  mutate(dis_t = dis, lstat_t = lstat, medv_t = medv, nox_t = nox)%>%
+                dplyr::select(-c(dis, lstat, medv, nox))
+```
+
+```{r}
+# Combine data frames by adding columns
+result_eval <- cbind(df_crime_train_with_transformed_eval, df_crime_eval %>%
+                dplyr::select(-c(dis, lstat, medv, nox)))
+```
+
+
+```{r}
+# Apply min-max scaling to all three variables
+df_scaled_eval <- result_eval
+df_scaled_eval[] <- lapply(result_eval, rescale)
+```
+
+
+### **Make Prediction on transformed dataset using selected model from training dataset - Backwards Elimination model A6**
+
+
+```{r}
+df_scaled_eval$PRED = predict(A6_back_elim, new = df_scaled_eval, type="response")
+
+df_scaled_eval$PRED_CLASS <- ifelse(df_scaled_eval$PRED > 0.5, 1, 0)
+```
+
+```{r}
+table(df_scaled_eval$PRED_CLASS)
+```
+
+As shown above, we predict that 25 cases with crime above the median rate.
