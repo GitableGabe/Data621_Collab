@@ -36,13 +36,13 @@ library('kableExtra')
 ```
 
 ```{r, echo=FALSE}
-'column1'<-c("INDEX", "TARGET_FLAG", "TARGET_AMT", "AGE", "BLUEBOOK", "CAR_AGE",
+ls_c1 <-c("INDEX", "TARGET_FLAG", "TARGET_AMT", "AGE", "BLUEBOOK", "CAR_AGE",
              "CAR_TYPE", "CAR_USE", "CLM_FREQ #", "EDUCATION", "HOMEKIDS #",
              "HOME_VAL", "INCOME", "JOB","KIDSDRIV #", "MSTATUS", "MVR_PTS",
              "OLDCLAIM", "PARENT1", "RED_CAR", "REVOKED", "SEX Gender", "TIF",
              "TRAVTIME", "URBANICITY", "YOJ")
 
-'column2'<- c("Identification Variable (do not use)",
+ls_c2 <- c("Identification Variable (do not use)",
               "Was Car in a crash? 1=YES 0=NO",
               "If car was in a crash, what was the cost",
               "Age of Driver", "Value of Vehicle", "Vehicle Age", "Type of Car",
@@ -54,7 +54,7 @@ library('kableExtra')
               "Gender", "Time in Force", "Distance to Work", "Home/Work Area",
               "Years on Job")
 
-column3 <- c("None", "None", "None",
+ls_c3 <- c("None", "None", "None",
              "Very young people tend to be risky. Maybe very old people also.",
              paste("Unknown effect on probability of collision, but probably ",
               "effect the payout if there is a crash"),
@@ -92,18 +92,19 @@ column3 <- c("None", "None", "None",
              "Unknown",
              "People who stay at a job for a long time are usually more safe")  
   
-my_data_frame <- data.frame(column1 = column1,
-                            Definition = column2,
-                            column3 = column3)%>%
+df_overview <- data.frame(column1 = ls_c1,
+                            Definition = ls_c2,
+                            column3 = ls_c3)%>%
                               rename(`Variable Names` = column1, 
                                      `Theoretical Effect` = column3)
 
+df_overview%>%
+  kable()%>%
+    kable_styling(latex_options = c('scale_down','HOLD_position'))
 ```
 
 ```{r, echo=FALSE}
-my_data_frame%>%
-  kable()%>%
-    kable_styling(latex_options = c('scale_down','HOLD_position'))
+rm(ls_c1,ls_c2,ls_c3,df_overview)
 ```
 
 \
