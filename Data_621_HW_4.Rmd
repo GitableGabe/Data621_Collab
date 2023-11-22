@@ -100,7 +100,8 @@ df_overview <- data.frame(column1 = ls_c1,
 
 df_overview%>%
   kable()%>%
-    kable_styling(latex_options = c('scale_down','HOLD_position'))
+    kable_styling(latex_options = c('scale_down','HOLD_position'))%>%
+      column_spec(3, width = "20em")
 ```
 
 ```{r, echo=FALSE}
@@ -161,14 +162,14 @@ url_git <- "https://raw.githubusercontent.com/GitableGabe/Data621_Data/main/"
 df_insur_eval <- 
   read.csv(paste0(url_git,"insurance-evaluation-data.csv"))
 
-head(df_insur_eval,n=10)
+head(df_insur_eval)
 ```
 
 ```{r}
 df_insur_train <- 
   read.csv(paste0(url_git,"insurance_training_data.csv"))
 
-head(df_insur_train,n=10)
+head(df_insur_train)
 ```
 
 

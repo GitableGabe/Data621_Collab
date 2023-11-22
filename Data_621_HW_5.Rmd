@@ -75,7 +75,9 @@ df_overview <- data.frame(column1 = ls_c1,
 
 df_overview%>%
   kable()%>%
-    kable_styling(latex_options = c('scale_down','HOLD_position'))
+    kable_styling(latex_options = c('scale_down','HOLD_position'))%>%
+      column_spec(2, width = "20em")%>%
+        column_spec(3, width = "20em")
 ```
 
 ```{r, echo=FALSE}
