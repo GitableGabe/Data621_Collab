@@ -151,8 +151,6 @@ Decide on the criteria for selecting the best multiple linear regression model a
 
 For the multiple linear regression model, will you use a metric such as Adjusted R2, RMSE, etc.? Be sure to explain how you can make inferences from the model, discuss multi-collinearity issues (if any), and discuss other relevant model output. Using the training data set, evaluate the multiple linear regression model based on (a) mean squared error, (b) R2 , (c) F-statistic, and (d) residual plots. For the binary logistic regression model, will you use a metric such as log likelihood, AIC, ROC curve, etc.? Using the training data set, evaluate the binary logistic regression model based on (a) accuracy, (b) classification error rate, (c) precision, (d) sensitivity, (e) specificity, (f) F1 score, (g) AUC, and (h) confusion matrix. Make predictions using the evaluation data set.
 
-# Import Data
-
 ```{r, echo=FALSE}
 url_git <- "https://raw.githubusercontent.com/GitableGabe/Data621_Data/main/"
 ```
@@ -160,15 +158,13 @@ url_git <- "https://raw.githubusercontent.com/GitableGabe/Data621_Data/main/"
 ```{r}
 df_insur_eval <- 
   read.csv(paste0(url_git,"insurance-evaluation-data.csv"))
-
 head(df_insur_eval,n=10)
 ```
 
 ```{r}
 df_insur_train <- 
   read.csv(paste0(url_git,"insurance_training_data.csv"))
-
-head(df_insur_train,n=10)
+head(df_insur_eval,n=10)
 ```
 
 
