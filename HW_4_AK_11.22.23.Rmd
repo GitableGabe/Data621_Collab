@@ -1,0 +1,179 @@
+---
+title: "DATA 621: BUSINESS ANALYTICS AND DATA MINING HOMEWORK#:  Multiple Linear Regression and binary Logistic Regression"
+date: "Last edited `r format(Sys.time(), '%B %d, %Y')`"
+author: "Group 2 - Gabriel Campos, Melissa Bowman, Alexander Khaykin, & Jennifer Abinette"
+output:
+  pdf_document:
+    latex_engine: xelatex
+  geometry: "left=0.5cm,right=0.5cm,top=1cm,bottom=2cm"
+  html_document:
+    df_print: paged
+urlcolor: blue
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+library(tidyverse)
+library(ggplot2)
+library(GGally)
+library(Hmisc)
+library(corrplot)
+library(PerformanceAnalytics)
+library(psych)
+```
+
+####INTRODUCTION
+
+###DATA Preparation
+```{r}
+train <- read.csv("insurance_training_data.csv")
+eval <- read.csv("insurance-evaluation-data.csv")
+```
+
+```{r}
+dim(train)
+```
+In the training dataset, there are 8,161 rows and 26 columns. We will remove the INDEX column because it is a unique identifier and will not be used.The two outcome variables are:
+* TARGET_FLAG - a 0/1 variable that indicates if a insurance client has been in a car accident
+* TARGET_AMT - a numeric variable that of insurance claim payout per car accident 
+
+```{r}
+train <- train %>% 
+  select(-INDEX)
+```
+
+```{r}
+eval <- eval %>% 
+  select(-INDEX)
+```
+
+```{r}
+#loop to count the NAs for each column
+for (i in colnames(train)){
+  print(paste(i,"  ", sum(is.na(train[,i])),sep = ""))
+}
+```
+* There are NAs in three variable columns, 6 in AGE, 454 in YOJ (Years on the job) , and 510 in CAR_AGE. For these variable we will impute the mean so as not to create an over fitting problem. Also, there was an irrational value of negative 3 for CAR_AGE, we replaced it with zero.
+
+```{r}
+train <- train %>% 
+  mutate(AGE = ifelse(is.na(AGE), mean(AGE, na.rm = TRUE), AGE), YOJ = ifelse(is.na(YOJ), mean(YOJ, na.rm = TRUE), YOJ), CAR_AGE = ifelse(is.na(CAR_AGE), mean(CAR_AGE, na.rm = TRUE), CAR_AGE)) %>% 
+  mutate(CAR_AGE = ifelse(CAR_AGE < 0, 0, CAR_AGE))
+
+summary(train$CAR_AGE)
+```
+```{r}
+#loop to count the NAs for each column
+for (i in colnames(eval)){
+  print(paste(i,"  ", sum(is.na(eval[,i])),sep = ""))
+}
+```
+* There are NAs in five variable columns, 1 in AGE, 94 in YOJ (Years on the job) , 125 in INCOME, 111 HOME_VAL, and 129 in CAR_AGE. For these variable we will impute the mean so as not to create an over fitting problem. 
+
+```{r}
+eval <- eval %>% 
+  mutate(AGE = ifelse(is.na(AGE), mean(AGE, na.rm = TRUE), AGE), YOJ = ifelse(is.na(YOJ), mean(YOJ, na.rm = TRUE), YOJ), CAR_AGE = ifelse(is.na(CAR_AGE), mean(CAR_AGE, na.rm = TRUE), CAR_AGE)) %>% 
+  mutate(INCOME = ifelse(is.na(INCOME), mean(INCOME, na.rm = TRUE), INCOME), HOME_VAL = ifelse(is.na(HOME_VAL), mean(HOME_VAL, na.rm = TRUE), YOJ))
+
+summary(eval$CAR_AGE)
+```
+* There are 12 variables with discrete values and 13 variables with continuous values
+
+We noticed that there are characters in several of the columns that need to be cleaned up before the analysis. These will be removed and if necessary the variable will be converted to the appropriate data type.
+
+```{r}
+train <- train %>% 
+  mutate(INCOME = gsub("\\$", "", INCOME), HOME_VAL = gsub("\\$", "", HOME_VAL), BLUEBOOK = gsub("\\$", "", BLUEBOOK), OLDCLAIM = gsub("\\$", "", OLDCLAIM)) %>% 
+  mutate(INCOME = gsub(",", "", INCOME), HOME_VAL = gsub(",", "", HOME_VAL), BLUEBOOK = gsub(",", "", BLUEBOOK), OLDCLAIM = gsub(",", "", OLDCLAIM)) %>% 
+  mutate(INCOME = as.numeric(INCOME), HOME_VAL = as.numeric(HOME_VAL), BLUEBOOK = as.numeric(BLUEBOOK), OLDCLAIM = as.numeric(OLDCLAIM))
+```
+
+```{r}
+train <- train %>% 
+  mutate(MSTATUS = gsub("z_","", MSTATUS), SEX = gsub("z_","", SEX),EDUCATION = gsub("z_","", EDUCATION), JOB = gsub("z_","", JOB), CAR_TYPE = gsub("z_","", CAR_TYPE), URBANICITY = gsub("z_","", URBANICITY))
+```
+
+```{r}
+eval <- eval %>% 
+  mutate(INCOME = gsub("\\$", "", INCOME), HOME_VAL = gsub("\\$", "", HOME_VAL), BLUEBOOK = gsub("\\$", "", BLUEBOOK), OLDCLAIM = gsub("\\$", "", OLDCLAIM)) %>% 
+  mutate(INCOME = gsub(",", "", INCOME), HOME_VAL = gsub(",", "", HOME_VAL), BLUEBOOK = gsub(",", "", BLUEBOOK), OLDCLAIM = gsub(",", "", OLDCLAIM)) %>% 
+  mutate(INCOME = as.numeric(INCOME), HOME_VAL = as.numeric(HOME_VAL), BLUEBOOK = as.numeric(BLUEBOOK), OLDCLAIM = as.numeric(OLDCLAIM))
+```
+
+```{r}
+eval <- eval %>% 
+  mutate(MSTATUS = gsub("z_","", MSTATUS), SEX = gsub("z_","", SEX),EDUCATION = gsub("z_","", EDUCATION), JOB = gsub("z_","", JOB), CAR_TYPE = gsub("z_","", CAR_TYPE), URBANICITY = gsub("z_","", URBANICITY))
+```
+
+* We will recode JOB into White Collar(Clerical, Doctor, Lawyer, Manager, and Professional), Blue Collar, and None (Student, Homemaker)
+```{r}
+train <- train %>% 
+  mutate(JOB = ifelse(JOB=="Blue Collar", "Blue Collar", 
+                      ifelse(JOB=="Student" | JOB=="Home Maker", "None", "White Collar")))
+eval <- eval %>% 
+  mutate(JOB = ifelse(JOB=="Blue Collar", "Blue Collar", 
+                      ifelse(JOB=="Student" | JOB=="Home Maker", "None", "White Collar")))
+```
+
+* We will also recode KIDSDRIV into a 0 or 1 (1+kids driving). Because there are a lot more insurance claims without kids dring than with kids driving.
+```{r}
+train <- train %>% 
+  mutate(KIDSDRIV = ifelse(KIDSDRIV >= 1, 1, 0))
+
+eval <- eval %>% 
+  mutate(KIDSDRIV = ifelse(KIDSDRIV >= 1, 1, 0))
+```
+
+* Lastly we will shorten the lables for Urbanicity and Turn Education into a factor with "< Highschool" as the reference variable.
+
+```{r}
+train <- train %>% 
+  mutate(URBANICITY = ifelse(URBANICITY == "Highly Urban/ Urban", "Urban", "Rural")) %>% 
+  mutate(EDUCATION = factor(EDUCATION,levels = c("<High School", "High School", "Bachelors", "Masters", "PhD")))
+
+eval <- eval %>% 
+  mutate(URBANICITY = ifelse(URBANICITY == "Highly Urban/ Urban", "Urban", "Rural")) %>% 
+  mutate(EDUCATION = factor(EDUCATION,levels = c("<High School", "High School", "Bachelors", "Masters", "PhD")))
+```
+
+
+
+###Exploratory Data analysis
+
+Summary statistics for the numeric variables:
+```{r}
+train %>% 
+  select(TARGET_AMT, AGE, YOJ, INCOME, HOME_VAL, TRAVTIME, BLUEBOOK, TIF, OLDCLAIM, CLM_FREQ, MVR_PTS, CAR_AGE, HOMEKIDS) %>% 
+  describe()
+```
+The skewness and Kurtosis values for the outcome variable TARGET_AMT strongly suggests that the distribution is likely not normal.
+
+```{r}
+train %>% 
+  select(TARGET_AMT, AGE, YOJ, INCOME, HOME_VAL, TRAVTIME, BLUEBOOK, TIF, OLDCLAIM, CLM_FREQ, MVR_PTS, CAR_AGE, HOMEKIDS) %>% 
+  gather() %>% 
+  ggplot(aes(x = value)) + 
+  geom_histogram(fill = "cadetblue") + 
+  facet_wrap(~key, scales = "free")
+```
+
+The histogram for TARGET_AMT, CAR_AGE, CLM_FREQ,HOME_VAL, INCOME, MRV_PTS, OLDCLAIM, and TIF are clearly not normally distributed and will need to be transformed if the residuals are not normally distributed.
+
+We will explore the proportions of the discrete variables.
+
+```{r}
+train %>% 
+  select(TARGET_FLAG, KIDSDRIV, PARENT1, MSTATUS, SEX, EDUCATION, JOB, CAR_USE, CAR_TYPE, RED_CAR, REVOKED, URBANICITY) %>% 
+  gather() %>% 
+  ggplot(aes(x = value)) + 
+  geom_bar(fill = "cadetblue") + 
+  coord_flip()+
+  facet_wrap(~key, scales = "free")
+```
+
+
+
+
