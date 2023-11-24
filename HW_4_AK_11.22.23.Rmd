@@ -18,14 +18,17 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r, echo=FALSE, warning=FALSE, message=FALSE}
 library(tidyverse)
 library(ggplot2)
-library(GGally)
 library(Hmisc)
 library(corrplot)
-library(PerformanceAnalytics)
 library(psych)
+library(car)
+library(caret)
 ```
 
 ####INTRODUCTION
+
+
+
 
 ###DATA Preparation
 ```{r}
@@ -50,37 +53,11 @@ eval <- eval %>%
   select(-INDEX)
 ```
 
-```{r}
-#loop to count the NAs for each column
-for (i in colnames(train)){
-  print(paste(i,"  ", sum(is.na(train[,i])),sep = ""))
-}
-```
-* There are NAs in three variable columns, 6 in AGE, 454 in YOJ (Years on the job) , and 510 in CAR_AGE. For these variable we will impute the mean so as not to create an over fitting problem. Also, there was an irrational value of negative 3 for CAR_AGE, we replaced it with zero.
 
-```{r}
-train <- train %>% 
-  mutate(AGE = ifelse(is.na(AGE), mean(AGE, na.rm = TRUE), AGE), YOJ = ifelse(is.na(YOJ), mean(YOJ, na.rm = TRUE), YOJ), CAR_AGE = ifelse(is.na(CAR_AGE), mean(CAR_AGE, na.rm = TRUE), CAR_AGE)) %>% 
-  mutate(CAR_AGE = ifelse(CAR_AGE < 0, 0, CAR_AGE))
-
-summary(train$CAR_AGE)
-```
-```{r}
-#loop to count the NAs for each column
-for (i in colnames(eval)){
-  print(paste(i,"  ", sum(is.na(eval[,i])),sep = ""))
-}
-```
-* There are NAs in five variable columns, 1 in AGE, 94 in YOJ (Years on the job) , 125 in INCOME, 111 HOME_VAL, and 129 in CAR_AGE. For these variable we will impute the mean so as not to create an over fitting problem. 
-
-```{r}
-eval <- eval %>% 
-  mutate(AGE = ifelse(is.na(AGE), mean(AGE, na.rm = TRUE), AGE), YOJ = ifelse(is.na(YOJ), mean(YOJ, na.rm = TRUE), YOJ), CAR_AGE = ifelse(is.na(CAR_AGE), mean(CAR_AGE, na.rm = TRUE), CAR_AGE)) %>% 
-  mutate(INCOME = ifelse(is.na(INCOME), mean(INCOME, na.rm = TRUE), INCOME), HOME_VAL = ifelse(is.na(HOME_VAL), mean(HOME_VAL, na.rm = TRUE), YOJ))
-
-summary(eval$CAR_AGE)
-```
 * There are 12 variables with discrete values and 13 variables with continuous values
+
+##### DATA CLEANING
+
 
 We noticed that there are characters in several of the columns that need to be cleaned up before the analysis. These will be removed and if necessary the variable will be converted to the appropriate data type.
 
@@ -127,6 +104,13 @@ eval <- eval %>%
   mutate(KIDSDRIV = ifelse(KIDSDRIV >= 1, 1, 0))
 ```
 
+* Also, recode the yes/mo labels for marital status, parent status, red car, and revoked license variables as 1/0.
+
+```{r}
+train <- train %>% 
+  mutate(MSTATUS = ifelse(MSTATUS == "No", "0", "1"), PARENT1 = ifelse(PARENT1 == "No", "0", "1"), RED_CAR = ifelse(RED_CAR == "no", "0", "1"), REVOKED = ifelse(REVOKED == "No", "0", "1"))
+```
+
 * Lastly we will shorten the lables for Urbanicity and Turn Education into a factor with "< Highschool" as the reference variable.
 
 ```{r}
@@ -139,6 +123,41 @@ eval <- eval %>%
   mutate(EDUCATION = factor(EDUCATION,levels = c("<High School", "High School", "Bachelors", "Masters", "PhD")))
 ```
 
+##### MISSING DATA ANS IMPUTATION
+
+
+```{r}
+#loop to count the NAs for each column
+for (i in colnames(train)){
+  print(paste(i,"  ", sum(is.na(train[,i])),sep = ""))
+}
+```
+* There are NAs in three variable columns, 6 in AGE, 454 in YOJ (Years on the job) , and 510 in CAR_AGE. For these variable we will impute the median so as not to create an over fitting problem. Also, there was an irrational value of negative 3 for CAR_AGE, we replaced it with zero.
+
+```{r}
+train <- train %>% 
+  mutate(AGE = ifelse(is.na(AGE), median(AGE, na.rm = TRUE), AGE), YOJ = ifelse(is.na(YOJ), median(YOJ, na.rm = TRUE), YOJ), CAR_AGE = ifelse(is.na(CAR_AGE), median(CAR_AGE, na.rm = TRUE), CAR_AGE), 
+         HOME_VAL = ifelse(is.na(HOME_VAL), median(HOME_VAL, na.rm = TRUE), HOME_VAL),
+         INCOME = ifelse(is.na(INCOME), median(INCOME, na.rm = TRUE), INCOME)) %>% 
+  mutate(CAR_AGE = ifelse(CAR_AGE < 0, 0, CAR_AGE))
+
+summary(train$CAR_AGE)
+```
+```{r}
+#loop to count the NAs for each column
+for (i in colnames(eval)){
+  print(paste(i,"  ", sum(is.na(eval[,i])),sep = ""))
+}
+```
+* There are NAs in five variable columns, 1 in AGE, 94 in YOJ (Years on the job) , 125 in INCOME, 111 HOME_VAL, and 129 in CAR_AGE. For these variable we will impute the median so as not to create an over fitting problem. 
+
+```{r}
+eval <- eval %>% 
+  mutate(AGE = ifelse(is.na(AGE), median(AGE, na.rm = TRUE), AGE), YOJ = ifelse(is.na(YOJ), median(YOJ, na.rm = TRUE), YOJ), CAR_AGE = ifelse(is.na(CAR_AGE), median(CAR_AGE, na.rm = TRUE), CAR_AGE)) %>% 
+  mutate(INCOME = ifelse(is.na(INCOME), median(INCOME, na.rm = TRUE), INCOME), HOME_VAL = ifelse(is.na(HOME_VAL), median(HOME_VAL, na.rm = TRUE), YOJ))
+
+summary(eval$CAR_AGE)
+```
 
 
 ###Exploratory Data analysis
@@ -174,6 +193,78 @@ train %>%
   facet_wrap(~key, scales = "free")
 ```
 
+To check for coliniearity through the corellation of the variables
 
+```{r}
+mat <- train %>% 
+  select(-CAR_TYPE, -CAR_USE, -EDUCATION, -JOB, -SEX, -URBANICITY) %>% 
+  mutate(PARENT1 = as.numeric(PARENT1), MSTATUS = as.numeric(MSTATUS), RED_CAR = as.numeric(RED_CAR), REVOKED = as.numeric(REVOKED)) %>% 
+  cor()
+corrplot(mat, method = "circle", diag = FALSE, order ="hclust", type = "lower")
+```
+* We do not seem to have very much concern for high collinearity at this point.
 
+### Logistic Regression Model
+
+```{r}
+log_mod <- glm(TARGET_FLAG ~., data = train[,-2], family = binomial(link = "logit"))
+summary(log_mod)
+```
+
+```{r}
+vif(log_mod)
+```
+* The degree of freedom adjusted variance inflation factors suggests that there is no concerning colinearity becasue all of the values are less than 3.
+
+```{r}
+log_step <- step(log_mod, direction = "backward", test = "LRT")
+```
+
+```{r}
+summary(log_step)
+```
+The variable that positively impact the log odds of having car crash are the following:
+
+* Kids driving
+* Having kids at home (although this is a marginally significant p-value)
+* Being a parent(vs not being a a parent)
+* Having a longer travel time
+* Having a car type other than minivan(when compared to minivan)
+* Having an increased claims frequency 
+* Having a revoked license
+* Residing in an urban environment
+
+The variable that negatively impact the log odds of having car crash are the following:
+
+* Having a higher income
+* Having a higher home value
+* Being married
+* Having a college of graduate level education as opposed to having less than a high school level education(there is no difference between having a high school diploma and not having one)
+* Using the car for private as opposed to commercial use
+* Having a higher Bluebook value for your vehicle
+* Having a longer tenure as insurance client
+* Having longer period of times between claims
+
+### ASSESING MODEL PERFORMANCE
+
+We are going to first predict the probabilities of a car crash using the final backward stepwise regression model from which we will then call the predicted car crash based on the probability of 0.5.
+
+```{r}
+train$log_pred_prob <- predict(log_step, newdata = train[,-c(1:2)], type = "response")
+train$log_pred <- ifelse(train$log_pred_prob > 0.5, 1, 0)
+```
+
+Next we will assess model performance by calculating the area under the curve (AUC) for this model.
+
+```{r}
+pROC::auc(train$TARGET_FLAG, train$log_pred)
+pROC::roc(train$TARGET_FLAG~train$log_pred, plot = TRUE, print.auc = TRUE)
+```
+The AUC of the model of .67 indicates that the model is only fair at predicting whether or not an insurance client will have a car crash.
+
+We can get a clearer sense of how the model underperformed by looking at a confusion matrix.
+
+```{r}
+confusionMatrix(as.factor(train$log_pred), as.factor(train$TARGET_FLAG), positive = "1")
+```
 
