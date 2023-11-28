@@ -1,0 +1,430 @@
+---
+title: "DATA 621: BUSINESS ANALYTICS AND DATA MINING HOMEWORK#:  Multiple Linear Regression and binary Logistic Regression"
+date: "Last edited `r format(Sys.time(), '%B %d, %Y')`"
+author: "Group 2 - Gabriel Campos, Melissa Bowman, Alexander Khaykin, & Jennifer Abinette"
+output:
+  pdf_document:
+    latex_engine: xelatex
+  geometry: "left=0.5cm,right=0.5cm,top=1cm,bottom=2cm"
+  html_document:
+    df_print: paged
+urlcolor: blue
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+library(tidyverse)
+library(ggplot2)
+library(Hmisc)
+library(corrplot)
+library(psych)
+library(car)
+library(caret)
+options(scipen = 999)
+```
+
+####INTRODUCTION
+
+
+
+
+###DATA Preparation
+```{r}
+train <- read.csv("insurance_training_data.csv")
+eval <- read.csv("insurance-evaluation-data.csv")
+```
+
+```{r}
+dim(train)
+```
+In the training dataset, there are 8,161 rows and 26 columns. We will remove the INDEX column because it is a unique identifier and will not be used.The two outcome variables are:
+* TARGET_FLAG - a 0/1 variable that indicates if a insurance client has been in a car accident
+* TARGET_AMT - a numeric variable that of insurance claim payout per car accident 
+
+```{r}
+train <- train %>% 
+  select(-INDEX)
+```
+
+```{r}
+eval <- eval %>% 
+  select(-INDEX)
+```
+
+
+* There are 12 variables with discrete values and 13 variables with continuous values
+
+##### DATA CLEANING
+
+
+We noticed that there are characters in several of the columns that need to be cleaned up before the analysis. These will be removed and if necessary the variable will be converted to the appropriate data type.
+
+```{r}
+train <- train %>% 
+  mutate(INCOME = gsub("\\$", "", INCOME), HOME_VAL = gsub("\\$", "", HOME_VAL), BLUEBOOK = gsub("\\$", "", BLUEBOOK), OLDCLAIM = gsub("\\$", "", OLDCLAIM)) %>% 
+  mutate(INCOME = gsub(",", "", INCOME), HOME_VAL = gsub(",", "", HOME_VAL), BLUEBOOK = gsub(",", "", BLUEBOOK), OLDCLAIM = gsub(",", "", OLDCLAIM)) %>% 
+  mutate(INCOME = as.numeric(INCOME), HOME_VAL = as.numeric(HOME_VAL), BLUEBOOK = as.numeric(BLUEBOOK), OLDCLAIM = as.numeric(OLDCLAIM))
+```
+
+```{r}
+train <- train %>% 
+  mutate(MSTATUS = gsub("z_","", MSTATUS), SEX = gsub("z_","", SEX),EDUCATION = gsub("z_","", EDUCATION), JOB = gsub("z_","", JOB), CAR_TYPE = gsub("z_","", CAR_TYPE), URBANICITY = gsub("z_","", URBANICITY))
+```
+
+```{r}
+eval <- eval %>% 
+  mutate(INCOME = gsub("\\$", "", INCOME), HOME_VAL = gsub("\\$", "", HOME_VAL), BLUEBOOK = gsub("\\$", "", BLUEBOOK), OLDCLAIM = gsub("\\$", "", OLDCLAIM)) %>% 
+  mutate(INCOME = gsub(",", "", INCOME), HOME_VAL = gsub(",", "", HOME_VAL), BLUEBOOK = gsub(",", "", BLUEBOOK), OLDCLAIM = gsub(",", "", OLDCLAIM)) %>% 
+  mutate(INCOME = as.numeric(INCOME), HOME_VAL = as.numeric(HOME_VAL), BLUEBOOK = as.numeric(BLUEBOOK), OLDCLAIM = as.numeric(OLDCLAIM))
+```
+
+```{r}
+eval <- eval %>% 
+  mutate(MSTATUS = gsub("z_","", MSTATUS), SEX = gsub("z_","", SEX),EDUCATION = gsub("z_","", EDUCATION), JOB = gsub("z_","", JOB), CAR_TYPE = gsub("z_","", CAR_TYPE), URBANICITY = gsub("z_","", URBANICITY))
+```
+
+* We will recode JOB into White Collar(Clerical, Doctor, Lawyer, Manager, and Professional), Blue Collar, and None (Student, Homemaker)
+```{r}
+train <- train %>% 
+  mutate(JOB = ifelse(JOB=="Blue Collar", "Blue Collar", 
+                      ifelse(JOB=="Student" | JOB=="Home Maker", "None", "White Collar")))
+eval <- eval %>% 
+  mutate(JOB = ifelse(JOB=="Blue Collar", "Blue Collar", 
+                      ifelse(JOB=="Student" | JOB=="Home Maker", "None", "White Collar")))
+```
+
+* We will also recode KIDSDRIV into a 0 or 1 (1+kids driving). Because there are a lot more insurance claims without kids dring than with kids driving.
+```{r}
+train <- train %>% 
+  mutate(KIDSDRIV = ifelse(KIDSDRIV >= 1, 1, 0))
+
+eval <- eval %>% 
+  mutate(KIDSDRIV = ifelse(KIDSDRIV >= 1, 1, 0))
+```
+
+* Also, recode the yes/mo labels for marital status, parent status, red car, and revoked license variables as 1/0.
+
+```{r}
+train <- train %>% 
+  mutate(MSTATUS = ifelse(MSTATUS == "No", "0", "1"), PARENT1 = ifelse(PARENT1 == "No", "0", "1"), RED_CAR = ifelse(RED_CAR == "no", "0", "1"), REVOKED = ifelse(REVOKED == "No", "0", "1"))
+eval <- eval %>% 
+  mutate(MSTATUS = ifelse(MSTATUS == "No", "0", "1"), PARENT1 = ifelse(PARENT1 == "No", "0", "1"), RED_CAR = ifelse(RED_CAR == "no", "0", "1"), REVOKED = ifelse(REVOKED == "No", "0", "1"))
+```
+
+* Lastly we will shorten the lables for Urbanicity and Turn Education into a factor with "< Highschool" as the reference variable.
+
+```{r}
+train <- train %>% 
+  mutate(URBANICITY = ifelse(URBANICITY == "Highly Urban/ Urban", "Urban", "Rural")) %>% 
+  mutate(EDUCATION = factor(EDUCATION,levels = c("<High School", "High School", "Bachelors", "Masters", "PhD")))
+
+eval <- eval %>% 
+  mutate(URBANICITY = ifelse(URBANICITY == "Highly Urban/ Urban", "Urban", "Rural")) %>% 
+  mutate(EDUCATION = factor(EDUCATION,levels = c("<High School", "High School", "Bachelors", "Masters", "PhD")))
+```
+
+##### MISSING DATA ANS IMPUTATION
+
+
+```{r}
+#loop to count the NAs for each column
+for (i in colnames(train)){
+  print(paste(i,"  ", sum(is.na(train[,i])),sep = ""))
+}
+```
+* There are NAs in three variable columns, 6 in AGE, 454 in YOJ (Years on the job) , and 510 in CAR_AGE. For these variable we will impute the median so as not to create an over fitting problem. Also, there was an irrational value of negative 3 for CAR_AGE, we replaced it with zero.
+
+```{r}
+train <- train %>% 
+  mutate(AGE = ifelse(is.na(AGE), median(AGE, na.rm = TRUE), AGE), YOJ = ifelse(is.na(YOJ), median(YOJ, na.rm = TRUE), YOJ), CAR_AGE = ifelse(is.na(CAR_AGE), median(CAR_AGE, na.rm = TRUE), CAR_AGE), 
+         HOME_VAL = ifelse(is.na(HOME_VAL), median(HOME_VAL, na.rm = TRUE), HOME_VAL),
+         INCOME = ifelse(is.na(INCOME), median(INCOME, na.rm = TRUE), INCOME)) %>% 
+  mutate(CAR_AGE = ifelse(CAR_AGE < 0, 0, CAR_AGE))
+
+summary(train$CAR_AGE)
+```
+```{r}
+#loop to count the NAs for each column
+for (i in colnames(eval)){
+  print(paste(i,"  ", sum(is.na(eval[,i])),sep = ""))
+}
+```
+* There are NAs in five variable columns, 1 in AGE, 94 in YOJ (Years on the job) , 125 in INCOME, 111 HOME_VAL, and 129 in CAR_AGE. For these variable we will impute the median so as not to create an over fitting problem. 
+
+```{r}
+eval <- eval %>% 
+  mutate(AGE = ifelse(is.na(AGE), median(AGE, na.rm = TRUE), AGE), YOJ = ifelse(is.na(YOJ), median(YOJ, na.rm = TRUE), YOJ), CAR_AGE = ifelse(is.na(CAR_AGE), median(CAR_AGE, na.rm = TRUE), CAR_AGE)) %>% 
+  mutate(INCOME = ifelse(is.na(INCOME), median(INCOME, na.rm = TRUE), INCOME), HOME_VAL = ifelse(is.na(HOME_VAL), median(HOME_VAL, na.rm = TRUE), YOJ))
+
+summary(eval$CAR_AGE)
+```
+
+
+###Exploratory Data analysis
+
+Summary statistics for the numeric variables:
+```{r}
+train %>% 
+  select(TARGET_AMT, AGE, YOJ, INCOME, HOME_VAL, TRAVTIME, BLUEBOOK, TIF, OLDCLAIM, CLM_FREQ, MVR_PTS, CAR_AGE, HOMEKIDS) %>% 
+  describe()
+```
+The skewness and Kurtosis values for the outcome variable TARGET_AMT strongly suggests that the distribution is likely not normal.
+
+```{r}
+train %>% 
+  select(TARGET_AMT, AGE, YOJ, INCOME, HOME_VAL, TRAVTIME, BLUEBOOK, TIF, OLDCLAIM, CLM_FREQ, MVR_PTS, CAR_AGE, HOMEKIDS) %>% 
+  gather() %>% 
+  ggplot(aes(x = value)) + 
+  geom_histogram(fill = "cadetblue") + 
+  facet_wrap(~key, scales = "free")
+```
+
+The histogram for TARGET_AMT, CAR_AGE, CLM_FREQ,HOME_VAL, INCOME, MRV_PTS, OLDCLAIM, and TIF are clearly not normally distributed and will need to be transformed if the residuals are not normally distributed.
+
+We will explore the proportions of the discrete variables.
+
+```{r}
+train %>% 
+  select(TARGET_FLAG, KIDSDRIV, PARENT1, MSTATUS, SEX, EDUCATION, JOB, CAR_USE, CAR_TYPE, RED_CAR, REVOKED, URBANICITY) %>% 
+  gather() %>% 
+  ggplot(aes(x = value)) + 
+  geom_bar(fill = "cadetblue") + 
+  coord_flip()+
+  facet_wrap(~key, scales = "free")
+```
+
+To check for coliniearity through the corellation of the variables
+
+```{r}
+mat <- train %>% 
+  select(-CAR_TYPE, -CAR_USE, -EDUCATION, -JOB, -SEX, -URBANICITY) %>% 
+  mutate(PARENT1 = as.numeric(PARENT1), MSTATUS = as.numeric(MSTATUS), RED_CAR = as.numeric(RED_CAR), REVOKED = as.numeric(REVOKED)) %>% 
+  cor()
+corrplot(mat, method = "circle", diag = FALSE, order ="hclust", type = "lower")
+```
+* We do not seem to have very much concern for high collinearity at this point.
+
+### Logistic Regression Model
+
+```{r}
+log_mod <- glm(TARGET_FLAG ~., data = train[,-2], family = binomial(link = "logit"))
+summary(log_mod)
+```
+
+
+
+```{r}
+vif(log_mod)
+```
+* The degree of freedom adjusted variance inflation factors suggests that there is no concerning colinearity becasue all of the values are less than 3.
+
+```{r}
+log_step <- step(log_mod, direction = "backward", test = "LRT")
+```
+
+```{r}
+summary(log_step)
+```
+The variable that positively impact the log odds of having car crash are the following:
+
+* Kids driving
+* Having kids at home (although this is a marginally significant p-value)
+* Being a parent(vs not being a a parent)
+* Having a longer travel time
+* Having a car type other than minivan(when compared to minivan)
+* Having an increased claims frequency 
+* Having a revoked license
+* Residing in an urban environment
+* Having more points on the drivers license
+
+The variable that negatively impact the log odds of having car crash are the following:
+
+* Having a higher income
+* Having a higher home value
+* Being married
+* Having a college of graduate level education as opposed to having less than a high school level education(there is no difference between having a high school diploma and not having one)
+* Using the car for private as opposed to commercial use
+* Having a higher Bluebook value for your vehicle
+* Having a longer tenure as insurance client
+* Having longer period of times between claims
+
+### ASSESING MODEL PERFORMANCE
+
+We are going to first predict the probabilities of a car crash using the final backward stepwise regression model from which we will then call the predicted car crash based on the probability of 0.5.
+
+```{r}
+train$log_pred_prob <- predict(log_step, newdata = train[,-c(1:2)], type = "response")
+train$log_pred <- ifelse(train$log_pred_prob > 0.5, 1, 0)
+```
+
+Next we will assess model performance by calculating the area under the curve (AUC) for this model.
+
+```{r}
+pROC::auc(train$TARGET_FLAG, train$log_pred)
+pROC::roc(train$TARGET_FLAG~train$log_pred, plot = TRUE, print.auc = TRUE)
+```
+The AUC of the model of .67 indicates that the model is only fair at predicting whether or not an insurance client will have a car crash.
+
+We can get a clearer sense of how the model under performed by looking at a confusion matrix.
+
+```{r}
+confusionMatrix(as.factor(train$log_pred), as.factor(train$TARGET_FLAG), positive = "1")
+```
+* After fitting the final logistic model to the train data the accuracy obtained is 78.9%, but the sensitivity is extremely low at only 41% thus the balance accuracy is the same as the AUC at 66.8%. 
+* It is worth noting that with such low sensitivity we can expect predictions to grossly under perform when predicting car crashes. 
+
+#### PREDICTING CAR CRASHES WITH THE EVALUATIONS DATASET
+
+```{r}
+eval$log_pred_prob <- predict(log_step, newdata = eval[,-c(1:2)], type = "response")
+eval$log_pred <- ifelse(eval$log_pred_prob > 0.5, 1, 0)
+```
+
+```{r}
+eval %>% 
+  select(log_pred, KIDSDRIV, PARENT1, MSTATUS, EDUCATION, CAR_TYPE, REVOKED, URBANICITY, HOMEKIDS) %>% 
+  mutate_if(is.character, as.factor) %>% 
+  mutate_if(is.numeric, as.factor) %>% 
+  pivot_longer(-log_pred, names_to = "key", values_to = "value") %>% 
+  ggplot(aes(x = value, fill = log_pred)) + 
+  geom_bar() + 
+  scale_fill_discrete(labels = c("no crash", "crash"), name = "Predicted Outcome") +
+  coord_flip()+
+  facet_wrap(~key, scales = "free")
+```
+
+
+```{r}
+eval %>% 
+  select(log_pred, INCOME, HOME_VAL, TRAVTIME, TIF, OLDCLAIM, CLM_FREQ, MVR_PTS, BLUEBOOK) %>% 
+  pivot_longer(-log_pred, names_to = "key", values_to = "value") %>%  
+  ggplot(aes(y = value, x = as.factor(log_pred), fill = as.factor(log_pred))) + 
+  geom_boxplot() + 
+  scale_fill_discrete(labels = c("no crash", "crash"), name = "Predicted Outcome") +
+  xlab("Predicted Outcome")+
+  facet_wrap(~key, scales = "free")
+```
+
+Assessing the predicted car crashes for the evaluation dataset, seems to largely reflect what put into the model. Areas with stronger predictions were:
+
+* Being a parent(vs not being a a parent)
+* Having a longer travel time
+* Having a car type other than minivan
+* Having an increased claims frequency 
+* Having a revoked license
+* Residing in an urban environment
+* Having a lower Bluebook value for your vehicle
+
+We do not see any change in the predicted car crashes with respect to the variable home values. 
+
+#### MULTIPLE LINEAR REGRESSION
+
+```{r}
+mlr_mod <- lm(TARGET_AMT ~., data = train[,-c(1,26:27)])
+summary(mlr_mod)
+```
+
+```{r}
+vif(mlr_mod)
+```
+* The degree of freedom adjusted variance inflation factors suggests that there is no concerning colinearity because all of the values are less than 3.
+
+```{r}
+mlr_step <- step(mlr_mod, direction = "backward", test = "F")
+```
+
+* Note that although bluebook was not dropped from the model it is not significant, thus we will drop from the final model. After dropping bluebook from the model, the variables of sex, old claim, and kids at home were no longer significant, thus these too were also dropped from the model.
+
+```{r}
+mlr_final <- lm(TARGET_AMT ~ KIDSDRIV + INCOME + PARENT1 + MSTATUS + TRAVTIME + CAR_USE + TIF + CAR_TYPE + 
+    CLM_FREQ + REVOKED + MVR_PTS + CAR_AGE + URBANICITY, data = train[,-c(1, 26:27)])
+```
+
+
+```{r}
+summary(mlr_final)
+```
+
+The variable that positively impact the average cost of having car crash are the following:
+
+* Kids driving
+* Being a parent(vs not being a a parent)
+* Having a longer travel time
+* Having a car type other than minivan(when compared to minivan)
+* Having an increased claims frequency 
+* Having a revoked license
+* Residing in an urban environment
+* Having higher points on drivers license 
+* 
+
+The variable that negatively impact the average cost of having crash are the following:
+
+* Having a higher income
+* Being married
+* Using the car for private as opposed to commercial use
+* Having a longer tenure as insurance client
+* Having an older car
+
+### TEST MODEL ASSUMPTIONS
+
+```{r}
+plot(mlr_final)
+```
+1. Linearity - the first plot shows that the relationship between target amount and the predictor variables in the final model is linear, so the assumption is net.
+2. Normality - the second plot shows that there is an approximate normal distribution of the residuals in the final model.
+3. Equality of Variances - the third plot that there are some unequal variance, however, the relationship is largely homoscedastic.
+4. Leverage / High Influence - the fourth plot shows that there are a few outliers with very high claim, but they do not violate cooks distance.
+
+* Thus we can trust the results of the final model.
+
+### ASSESING MODEL PERFORMANCE
+
+We are going to first predict the amount of the crash using the final model, we will then calculate the RMSE using the predictions.
+
+```{r}
+train$mlr_pred <- predict(mlr_final, newdata = train[,-c(1:2, 26:27)], type = "response")
+RMSE(train$mlr_pred, train$TARGET_AMT)
+summary(mlr_final)$adj.r.squared
+```
+* The RMSE for this model suggest an average deviation in the predicted claim amount from the true claim amount of $4,545. This suggests that the model is not doing a particularly good job at predicting accurate claim amounts. This is not surprising given that the R squared of the final model only explain 6.4% of the total variation in the claim amount. 
+
+#### PREDICTING AMOUNT OF CLAIM FOR CAR CRASHES WITH THE EVALUATIONS DATASET
+
+```{r}
+eval$mlr_pred <- predict(mlr_final, newdata = eval[,-c(1:2, 26:27)], type = "response")
+```
+
+```{r}
+coef(mlr_final)
+```
+
+```{r}
+eval %>% 
+  select(mlr_pred, INCOME, HOME_VAL, TRAVTIME, TIF, CLM_FREQ, MVR_PTS, CAR_AGE) %>%
+  mutate_if(is.character, as.numeric) %>% 
+  pivot_longer(-mlr_pred, names_to = "key", values_to = "value") %>%  
+  ggplot(aes(x = value, y = mlr_pred)) + 
+  geom_point() + 
+  geom_smooth() +
+  ylab("Predicted Claim Amount USD")+
+  facet_wrap(~key, scales = "free")
+```
+
+```{r}
+eval %>% 
+  select(mlr_pred, KIDSDRIV, MSTATUS, CAR_TYPE, REVOKED, URBANICITY, CAR_USE, PARENT1) %>% 
+  mutate_if(is.numeric, as.character) %>% 
+  pivot_longer(-mlr_pred, names_to = "key", values_to = "value") %>% 
+  mutate(mlr_pred = as.numeric(mlr_pred)) %>% 
+  ggplot(aes(x = mlr_pred, y = value)) + 
+  geom_boxplot(fill = "cadetblue") + 
+  xlab("Predicted Claim Amount USD") +
+  facet_wrap(~key, scales = "free")
+```
+
+
+
+
