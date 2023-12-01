@@ -154,9 +154,11 @@ head(df_wine_train)
 ```
 
 
-## Data Summary
+## Basic Data Exploration
 
 ### df_wine_eval
+
+#### Summary Statistics
 
 ```{r, warning=FALSE}
 dim(df_wine_eval)
@@ -173,7 +175,8 @@ summary(df_wine_eval)
 ```{r}
 str(df_wine_eval)
 ```
-**Missing Data**
+
+#### Missing Data
 
 ```{r}
 for (i in colnames(df_wine_eval)){
@@ -181,7 +184,25 @@ for (i in colnames(df_wine_eval)){
 }
 ```
 
+#### Outliers
+
+```{r, warning=FALSE}
+df_wine_eval %>%
+  scale() %>%
+  as.data.frame() %>%
+  stack() %>%
+  ggplot(aes(x = ind, y = values)) +
+  geom_boxplot() +
+  labs(title = 'Boxplot Eval (scaled)',
+       x = 'Variables',
+       y = 'Normalized_Values')+
+  theme(axis.text.x=element_text(size=10, angle=90)) 
+```
+
+
 ### df_wine_train
+
+#### Summary Statistics
 
 ```{r, echo=FALSE, warning=FALSE}
 df_wine_train_dim <-dim(df_wine_train)
@@ -199,13 +220,30 @@ summary(df_wine_train)
 str(df_wine_train)
 ```
 
-**Missing Data**
+#### Missing Data
 
 ```{r}
 for (i in colnames(df_wine_train)){
   print(paste(i,"  ", sum(is.na(df_wine_train[,i])),sep = ""))
 }
 ```
+
+#### Outliers
+
+```{r, warning=FALSE}
+df_wine_train %>%
+  scale() %>%
+  as.data.frame() %>%
+  stack() %>%
+  ggplot(aes(x = ind, y = values)) +
+  geom_boxplot() +
+  labs(title = 'Boxplot Training (scaled)',
+       x = 'Variables',
+       y = 'Normalized_Values')+
+  theme(axis.text.x=element_text(size=10, angle=90)) 
+```
+
+
 
 ```{r, echo=FALSE, warning=FALSE}
 
