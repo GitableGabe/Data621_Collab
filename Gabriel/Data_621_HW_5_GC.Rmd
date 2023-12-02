@@ -32,10 +32,11 @@ the target. You can only use the variables given to you (or variables that you d
 Below is a short description of the variables of interest in the data set:
 <br>
 
-```{r, echo=FALSE, message=FALSE}
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
 library('dplyr')
 library('tidyverse')
 library('kableExtra')
+library('psych')
 ```
 
 ```{r, echo=FALSE}
@@ -130,6 +131,8 @@ Decide on the criteria for selecting the best count regression model. Will you s
 
 For the count regression model, will you use a metric such as AIC, average squared error, etc.? Be sure to explain how you can make inferences from the model, and discuss other relevant model output. If you like the multiple linear regression model the best, please say why. However, you must select a count regression model for model deployment. Using the training data set, evaluate the performance of the count regression model. Make predictions using the evaluation data set.
 
+\newpage
+
 # Import Data
 
 ```{r, echo=FALSE}
@@ -146,7 +149,107 @@ head(df_wine_eval)
 ```{r}
 df_wine_train <- 
   read.csv(paste0(url_git,"wine-training-data.csv"))
+
 head(df_wine_train)
 ```
 
 
+## Basic Data Exploration
+
+### df_wine_eval
+
+#### Summary Statistics
+
+```{r, warning=FALSE}
+dim(df_wine_eval)
+```
+
+```{r, warning=FALSE}
+describe(df_wine_eval)
+```
+
+```{r}
+summary(df_wine_eval)
+```
+
+```{r}
+str(df_wine_eval)
+```
+
+#### Missing Data
+
+```{r}
+for (i in colnames(df_wine_eval)){
+  print(paste(i,"  ", sum(is.na(df_wine_eval[,i])),sep = ""))
+}
+```
+
+#### Outliers
+
+```{r, warning=FALSE}
+df_wine_eval %>%
+  scale() %>%
+  as.data.frame() %>%
+  stack() %>%
+  ggplot(aes(x = ind, y = values)) +
+  geom_boxplot() +
+  labs(title = 'Boxplot Eval (scaled)',
+       x = 'Variables',
+       y = 'Normalized_Values')+
+  theme(axis.text.x=element_text(size=10, angle=90)) 
+```
+
+
+### df_wine_train
+
+#### Summary Statistics
+
+```{r, echo=FALSE, warning=FALSE}
+df_wine_train_dim <-dim(df_wine_train)
+```
+
+```{r}
+describe(df_wine_train)
+```
+
+```{r}
+summary(df_wine_train)
+```
+
+```{r}
+str(df_wine_train)
+```
+
+#### Missing Data
+
+```{r}
+for (i in colnames(df_wine_train)){
+  print(paste(i,"  ", sum(is.na(df_wine_train[,i])),sep = ""))
+}
+```
+
+#### Outliers
+
+```{r, warning=FALSE}
+df_wine_train %>%
+  scale() %>%
+  as.data.frame() %>%
+  stack() %>%
+  ggplot(aes(x = ind, y = values)) +
+  geom_boxplot() +
+  labs(title = 'Boxplot Training (scaled)',
+       x = 'Variables',
+       y = 'Normalized_Values')+
+  theme(axis.text.x=element_text(size=10, angle=90)) 
+```
+
+
+
+```{r, echo=FALSE, warning=FALSE}
+
+# head(df_wine_eval)%>%
+#   select(1:8)%>%
+#   kable(format = "pandoc",caption = 'head(df_wine_eval) columns 1:8')%>%
+#   kable_styling(latex_options = c('scale_down','HOLD_position'))
+
+```
