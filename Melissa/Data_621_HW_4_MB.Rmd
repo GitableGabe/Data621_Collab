@@ -33,6 +33,9 @@ provided). Below is a short description of the variables of interest in the data
 library('dplyr')
 library('tidyverse')
 library('kableExtra')
+
+#Added
+library(ggplot2)
 ```
 
 ```{r, echo=FALSE}
@@ -107,7 +110,7 @@ df_overview%>%
 rm(ls_c1,ls_c2,ls_c3,df_overview)
 ```
 
-\
+
 
 ## Deliverables
 
@@ -166,5 +169,25 @@ df_insur_train <-
   read.csv(paste0(url_git,"insurance_training_data.csv"))
 head(df_insur_eval,n=10)
 ```
+```{r}
+# Fit a linear regression model with all variables
+lm_model <- lm(TARGET_AMT ~ ., data = df_insur_train)
 
+# Extract residuals
+residuals_all <- residuals(lm_model)
+
+# Plot residuals for each predictor variable
+par(mfrow = c(2, 2))  # Set up a 2x2 grid for subplots
+
+for (variable in names(df_insur_train)) {
+  if (variable != "TARGET_AMT") {  # Exclude the response variable
+    plot(df_insur_train[[variable]], residuals_all,
+         main = paste("Residuals vs", variable),
+         xlab = variable, ylab = "Residuals")
+  }
+}
+
+# Reset the plotting parameters
+par(mfrow = c(1, 1))
+```
 

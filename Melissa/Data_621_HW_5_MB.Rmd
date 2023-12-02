@@ -36,6 +36,12 @@ Below is a short description of the variables of interest in the data set:
 library('dplyr')
 library('tidyverse')
 library('kableExtra')
+
+#Added
+library(ggplot2)
+library(MASS)   # For negative binomial regression
+library(pscl)   # For hurdle and zero-inflated models
+library(Metrics) # For model evaluation metrics
 ```
 
 ```{r, echo=FALSE}
@@ -148,5 +154,122 @@ df_wine_train <-
   read.csv(paste0(url_git,"wine-training-data.csv"))
 head(df_wine_train)
 ```
+Of training variable:
+```{r}
+print(skim(df_wine_train))
+```
 
+```{r}
+summary(df_wine_train)
+```
+Of evaluated variable:
+
+```{r}
+print(skim(df_wine_eval))
+```
+
+```{r}
+summary(df_wine_eval)
+```
+
+
+Looking at histogram
+
+```{r}
+# Gather the data into a long format
+data_long <- gather(df_wine_train, key = "Variable", value = "Value")
+
+ggplot(data_long, aes(x = Value)) +
+  geom_histogram() +
+  facet_wrap(~Variable, scales = "free") +
+  labs(title = "Histogram of Variables")
+```
+
+Relatively normal data. We do not have to correct any variables 
+```{r}
+# Create a correlation matrix for all variables
+(cor_matrix <- cor(df_wine_train, use='complete.obs'))
+```
+
+Only 3 real variable that relate to TARGET which are LabelAppeal, AcidIndex, STARS. STARS though has a lot of NA values 
+
+
+```{r}
+df_wine_train %>% 
+  mutate(STARS = as.factor(STARS),
+         TARGET = as.factor(TARGET)) %>% 
+  ggplot(aes(STARS)) +
+  geom_bar(aes(fill = TARGET)) +
+  scale_fill_brewer(palette = "RdYlGn") 
+```
+
+
+```{r}
+df_wine_train_transformed <- df_wine_train %>% 
+    mutate(STARS = replace(STARS, is.na(STARS) , 0))
+
+df_wine_eval_transformed  <- df_wine_eval %>% 
+    mutate(STARS = replace(STARS, is.na(STARS) , 0))
+```
+
+
+```{r}
+# Plot a histogram
+hist(df_wine_train$TARGET, main = "Histogram of TARGET", xlab = "TARGET", col = "skyblue", border = "black")
+```
+```{r}
+# Calculate the percentage of unique values in the TARGET variable
+target_table <- table(df_wine_train$TARGET)
+target_percentage <- prop.table(target_table) * 100
+
+
+rounded_percentage <- round(target_percentage, 2)
+
+
+print(rounded_percentage)
+```
+
+Poisson Regression
+```{r}
+poisson_model <- glm(TARGET ~ LabelAppeal + AcidIndex + STARS, data = df_wine_train, family = poisson)
+summary(poisson_model)
+```
+
+```{r}
+poisson_model_transformed <- glm(TARGET ~ LabelAppeal + AcidIndex + STARS, data = df_wine_train_transformed, family = poisson)
+summary(poisson_model_transformed)
+```
+
+Negative Binomial Regression
+```{r}
+neg_binom_model <- glm.nb(TARGET ~ LabelAppeal + AcidIndex + STARS, data = df_wine_train)
+summary(neg_binom_model)
+```
+
+```{r}
+neg_binom_model_transformed <- glm.nb(TARGET ~ LabelAppeal + AcidIndex + STARS, data = df_wine_train_transformed)
+summary(neg_binom_model_transformed)
+```
+
+Hurdle Poisson Regression
+```{r}
+hurdle_poisson_model <- hurdle(TARGET ~ LabelAppeal + AcidIndex + STARS, data = df_wine_train_transformed, dist = "poisson")
+summary(hurdle_poisson_model)
+```
+
+Zero-Inflated Poisson Regression
+```{r}
+zip_model <- zeroinfl(TARGET ~ LabelAppeal + AcidIndex + STARS | 1, data = df_wine_train_transformed, dist = "poisson")
+summary(zip_model)
+```
+
+Need to split the df_wine_train_tramsformed into a test and training set to make an The Root Mean Squared Error (RMSE) comparison of all the regressions.  
+```{r}
+# Assuming df_wine is your complete dataset
+#set.seed(100)  # for reproducibility
+#n <- nrow(df_wine)
+#train_index <- sample(1:n, 0.8 * n)  # 80% for training, 20% for testing
+#df_wine_train <- df_wine[train_index, ]
+#df_wine_test <- df_wine[-train_index, ]
+```
 
