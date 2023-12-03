@@ -42,6 +42,7 @@ library(ggplot2)
 library(MASS)   # For negative binomial regression
 library(pscl)   # For hurdle and zero-inflated models
 library(Metrics) # For model evaluation metrics
+library(skimr)
 ```
 
 ```{r, echo=FALSE}
@@ -89,8 +90,6 @@ df_overview%>%
 ```{r, echo=FALSE}
 rm(ls_c1,ls_c2,ls_c3,df_overview)
 ```
-
-\
 
 ## Deliverables
 
@@ -203,7 +202,7 @@ df_wine_train %>%
   scale_fill_brewer(palette = "RdYlGn") 
 ```
 
-
+Because STARS has a lot of NA values that relate to a TARGET value of 0 we should make STARS NA zero instead of eliminating NA values.  
 ```{r}
 df_wine_train_transformed <- df_wine_train %>% 
     mutate(STARS = replace(STARS, is.na(STARS) , 0))
@@ -212,11 +211,12 @@ df_wine_eval_transformed  <- df_wine_eval %>%
     mutate(STARS = replace(STARS, is.na(STARS) , 0))
 ```
 
-
+(Might not need this histogram)
 ```{r}
 # Plot a histogram
 hist(df_wine_train$TARGET, main = "Histogram of TARGET", xlab = "TARGET", col = "skyblue", border = "black")
 ```
+
 ```{r}
 # Calculate the percentage of unique values in the TARGET variable
 target_table <- table(df_wine_train$TARGET)
@@ -228,48 +228,97 @@ rounded_percentage <- round(target_percentage, 2)
 
 print(rounded_percentage)
 ```
+Since there are an excess of zero values in the data set, the Poisson and Negative Binomial Regression may not be able to give the best model outcome. Therefore, we will also test Hurdle Poisson and Zero-Inflated Poisson Regression models to see if these models work best. To compare these models, we will be using the The Root Mean Squared Error (RMSE). The lowest number will tell us which model works best. 
 
-Poisson Regression
+Train-test split
 ```{r}
-poisson_model <- glm(TARGET ~ LabelAppeal + AcidIndex + STARS, data = df_wine_train, family = poisson)
-summary(poisson_model)
+set.seed(100)  
+n <- nrow(df_wine_train_transformed)
+train_index <- sample(1:n, 0.8 * n)  # 80% for training, 20% for testing
+df_train <- df_wine_train_transformed[train_index, ]
+df_test <- df_wine_train_transformed[-train_index, ]
 ```
 
+#Poisson Regression
+Model
 ```{r}
-poisson_model_transformed <- glm(TARGET ~ LabelAppeal + AcidIndex + STARS, data = df_wine_train_transformed, family = poisson)
-summary(poisson_model_transformed)
+poisson_model <- glm(TARGET ~ LabelAppeal + AcidIndex + STARS, data = df_train, family = poisson)
+#summary(poisson_model)
 ```
 
-Negative Binomial Regression
+Prediction of test-split data (will need to be rounded to full numbers?)
 ```{r}
-neg_binom_model <- glm.nb(TARGET ~ LabelAppeal + AcidIndex + STARS, data = df_wine_train)
-summary(neg_binom_model)
+poisson_preds <- predict(poisson_model, newdata = df_test, type = "response")
 ```
 
+RMSE
 ```{r}
-neg_binom_model_transformed <- glm.nb(TARGET ~ LabelAppeal + AcidIndex + STARS, data = df_wine_train_transformed)
-summary(neg_binom_model_transformed)
+poisson_rmse <- sqrt(mean((poisson_preds - df_test$TARGET)^2))
 ```
 
-Hurdle Poisson Regression
+
+# Negative Binomial Regression
+Model
 ```{r}
-hurdle_poisson_model <- hurdle(TARGET ~ LabelAppeal + AcidIndex + STARS, data = df_wine_train_transformed, dist = "poisson")
-summary(hurdle_poisson_model)
+neg_binom_model <- glm.nb(TARGET ~ LabelAppeal + AcidIndex + STARS, data = df_train)
+#summary(neg_binom_model)
 ```
 
-Zero-Inflated Poisson Regression
+Prediction of test-split data (will need to be rounded to full numbers?)
 ```{r}
-zip_model <- zeroinfl(TARGET ~ LabelAppeal + AcidIndex + STARS | 1, data = df_wine_train_transformed, dist = "poisson")
+neg_binom_preds <- predict(neg_binom_model, newdata = df_test, type = "response")
+```
+
+RMSE
+```{r}
+neg_binom_rmse <- sqrt(mean((neg_binom_preds - df_test$TARGET)^2))
+```
+
+# Hurdle Poisson Regression
+Model
+```{r}
+hurdle_poisson_model <- hurdle(TARGET ~ LabelAppeal + AcidIndex + STARS, data = df_train, dist = "poisson")
+#summary(hurdle_poisson_model)
+```
+
+Prediction of test-split data (will need to be rounded to full numbers?)
+```{r}
+hurdle_preds <- predict(hurdle_poisson_model, newdata = df_test, type = "response")
+```
+
+RMSE
+```{r}
+hurdle_rmse <- sqrt(mean((hurdle_preds - df_test$TARGET)^2))
+```
+
+# Zero-Inflated Poisson Regression
+Model
+```{r}
+zip_model <- zeroinfl(TARGET ~ LabelAppeal + AcidIndex + STARS | 1, data = df_train, dist = "poisson")
 summary(zip_model)
 ```
 
-Need to split the df_wine_train_tramsformed into a test and training set to make an The Root Mean Squared Error (RMSE) comparison of all the regressions.  
+Prediction of test-split data (will need to be rounded to full numbers?)
 ```{r}
-# Assuming df_wine is your complete dataset
-#set.seed(100)  # for reproducibility
-#n <- nrow(df_wine)
-#train_index <- sample(1:n, 0.8 * n)  # 80% for training, 20% for testing
-#df_wine_train <- df_wine[train_index, ]
-#df_wine_test <- df_wine[-train_index, ]
+zip_preds <- predict(zip_model, newdata = df_test, type = "response")
+```
+
+RMSE
+```{r}
+zip_rmse <- sqrt(mean((zip_preds - df_test$TARGET)^2))
+```
+
+# Compare RMSE
+```{r}
+comparison <- data.frame(
+  Model = c("Poisson", "Negative Binomial", "Hurdle Poisson", "Zero-Inflated Poisson"),
+  RMSE = c(poisson_rmse, neg_binom_rmse, hurdle_rmse, zip_rmse)
+)
+
+print(comparison)
+```
+# Predict using the hurdle_poisson_model
+```{r}
+eval_preds <- predict(hurdle_poisson_model, newdata = df_wine_eval_transformed, type = "response")
 ```
 

@@ -37,6 +37,13 @@ library('dplyr')
 library('tidyverse')
 library('kableExtra')
 library('psych')
+
+#Added by Melissa 
+library(ggplot2)
+library(MASS)   # For negative binomial regression
+library(pscl)   # For hurdle and zero-inflated models
+library(Metrics) # For model evaluation metrics
+library(skimr)
 ```
 
 ```{r, echo=FALSE}
@@ -252,4 +259,189 @@ df_wine_train %>%
 #   kable(format = "pandoc",caption = 'head(df_wine_eval) columns 1:8')%>%
 #   kable_styling(latex_options = c('scale_down','HOLD_position'))
 
+```
+
+(Melissa's added part)
+
+# DATA EXPLORATION 
+
+```{r}
+print(skim(df_wine_train))
+```
+
+```{r}
+summary(df_wine_train)
+```
+Of evaluated variable:
+
+```{r}
+print(skim(df_wine_eval))
+```
+
+```{r}
+summary(df_wine_eval)
+```
+
+
+Looking at histogram
+
+```{r}
+# Gather the data into a long format
+data_long <- gather(df_wine_train, key = "Variable", value = "Value")
+
+ggplot(data_long, aes(x = Value)) +
+  geom_histogram() +
+  facet_wrap(~Variable, scales = "free") +
+  labs(title = "Histogram of Variables")
+```
+
+Relatively normal data. We do not have to correct any variables 
+
+```{r}
+# Create a correlation matrix for all variables
+(cor_matrix <- cor(df_wine_train, use='complete.obs'))
+```
+
+Only 3 real variable that relate to TARGET which are LabelAppeal, AcidIndex, STARS. STARS though has a lot of NA values 
+
+```{r}
+# Plot a histogram
+hist(df_wine_train$TARGET, main = "Histogram of TARGET", xlab = "TARGET", col = "skyblue", border = "black")
+```
+
+```{r}
+# Calculate the percentage of unique values in the TARGET variable
+target_table <- table(df_wine_train$TARGET)
+target_percentage <- prop.table(target_table) * 100
+
+
+rounded_percentage <- round(target_percentage, 2)
+
+
+print(rounded_percentage)
+```
+
+```{r}
+df_wine_train %>% 
+  mutate(STARS = as.factor(STARS),
+         TARGET = as.factor(TARGET)) %>% 
+  ggplot(aes(STARS)) +
+  geom_bar(aes(fill = TARGET)) +
+  scale_fill_brewer(palette = "RdYlGn") 
+```
+
+Because STARS has a lot of NA values that relate to a TARGET value of 0 we should make STARS NA zero instead of eliminating NA values.
+
+# DATA PREPARATION
+
+```{r}
+df_wine_train_transformed <- df_wine_train %>% 
+    mutate(STARS = replace(STARS, is.na(STARS) , 0))
+
+df_wine_eval_transformed  <- df_wine_eval %>% 
+    mutate(STARS = replace(STARS, is.na(STARS) , 0))
+```
+
+
+Since there are an excess of zero values in the data set, the Poisson and Negative Binomial Regression may not be able to give the best model outcome. Therefore, we will also test Hurdle Poisson and Zero-Inflated Poisson Regression models to see if these models work best. To compare these models, we will be using the The Root Mean Squared Error (RMSE). The lowest number will tell us which model works best. 
+
+Train-test split
+```{r}
+set.seed(100)  
+n <- nrow(df_wine_train_transformed)
+train_index <- sample(1:n, 0.8 * n)  # 80% for training, 20% for testing
+df_train <- df_wine_train_transformed[train_index, ]
+df_test <- df_wine_train_transformed[-train_index, ]
+```
+
+# BUILD MODELS
+
+## Poisson Regression
+Model
+```{r}
+poisson_model <- glm(TARGET ~ LabelAppeal + AcidIndex + STARS, data = df_train, family = poisson)
+#summary(poisson_model)
+```
+
+Prediction of test-split data (will need to be rounded to full numbers?)
+```{r}
+poisson_preds <- predict(poisson_model, newdata = df_test, type = "response")
+```
+
+RMSE
+```{r}
+poisson_rmse <- sqrt(mean((poisson_preds - df_test$TARGET)^2))
+```
+
+
+## Negative Binomial Regression
+Model
+```{r}
+neg_binom_model <- glm.nb(TARGET ~ LabelAppeal + AcidIndex + STARS, data = df_train)
+#summary(neg_binom_model)
+```
+
+Prediction of test-split data (will need to be rounded to full numbers?)
+```{r}
+neg_binom_preds <- predict(neg_binom_model, newdata = df_test, type = "response")
+```
+
+RMSE
+```{r}
+neg_binom_rmse <- sqrt(mean((neg_binom_preds - df_test$TARGET)^2))
+```
+
+## Hurdle Poisson Regression
+Model
+```{r}
+hurdle_poisson_model <- hurdle(TARGET ~ LabelAppeal + AcidIndex + STARS, data = df_train, dist = "poisson")
+#summary(hurdle_poisson_model)
+```
+
+Prediction of test-split data (will need to be rounded to full numbers?)
+```{r}
+hurdle_preds <- predict(hurdle_poisson_model, newdata = df_test, type = "response")
+```
+
+RMSE
+```{r}
+hurdle_rmse <- sqrt(mean((hurdle_preds - df_test$TARGET)^2))
+```
+
+## Zero-Inflated Poisson Regression
+Model
+```{r}
+zip_model <- zeroinfl(TARGET ~ LabelAppeal + AcidIndex + STARS | 1, data = df_train, dist = "poisson")
+summary(zip_model)
+```
+
+Prediction of test-split data (will need to be rounded to full numbers?)
+```{r}
+zip_preds <- predict(zip_model, newdata = df_test, type = "response")
+```
+
+RMSE
+```{r}
+zip_rmse <- sqrt(mean((zip_preds - df_test$TARGET)^2))
+```
+
+
+# SELECT MODELS 
+
+## Compare RMSE
+```{r}
+comparison <- data.frame(
+  Model = c("Poisson", "Negative Binomial", "Hurdle Poisson", "Zero-Inflated Poisson"),
+  RMSE = c(poisson_rmse, neg_binom_rmse, hurdle_rmse, zip_rmse)
+)
+
+print(comparison)
+```
+
+
+Hurdle Poisson Regression gave us the lowest RMSE, making it the best model for predictions. 
+
+## Predict using the hurdle_poisson_model
+```{r}
+eval_preds <- predict(hurdle_poisson_model, newdata = df_wine_eval_transformed, type = "response")
 ```
