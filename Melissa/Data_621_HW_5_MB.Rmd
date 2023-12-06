@@ -174,7 +174,7 @@ summary(df_wine_eval)
 
 Looking at histogram
 
-```{r}
+```{r, warning=FALSE}
 # Gather the data into a long format
 data_long <- gather(df_wine_train, key = "Variable", value = "Value")
 
@@ -214,7 +214,8 @@ df_wine_eval_transformed  <- df_wine_eval %>%
 (Might not need this histogram)
 ```{r}
 # Plot a histogram
-hist(df_wine_train$TARGET, main = "Histogram of TARGET", xlab = "TARGET", col = "skyblue", border = "black")
+hist(df_wine_train$TARGET, main = "Histogram of TARGET", xlab = "TARGET",
+     col = "skyblue", border = "black")
 ```
 
 ```{r}
@@ -242,7 +243,8 @@ df_test <- df_wine_train_transformed[-train_index, ]
 #Poisson Regression
 Model
 ```{r}
-poisson_model <- glm(TARGET ~ LabelAppeal + AcidIndex + STARS, data = df_train, family = poisson)
+poisson_model <- glm(TARGET ~ LabelAppeal + AcidIndex + STARS, data = df_train,
+                     family = poisson)
 #summary(poisson_model)
 ```
 
@@ -260,13 +262,15 @@ poisson_rmse <- sqrt(mean((poisson_preds - df_test$TARGET)^2))
 # Negative Binomial Regression
 Model
 ```{r}
-neg_binom_model <- glm.nb(TARGET ~ LabelAppeal + AcidIndex + STARS, data = df_train)
+neg_binom_model <- glm.nb(TARGET ~ LabelAppeal + AcidIndex + STARS,
+                          data = df_train)
 #summary(neg_binom_model)
 ```
 
 Prediction of test-split data (will need to be rounded to full numbers?)
 ```{r}
-neg_binom_preds <- predict(neg_binom_model, newdata = df_test, type = "response")
+neg_binom_preds <- predict(neg_binom_model, newdata = df_test,
+                           type = "response")
 ```
 
 RMSE
@@ -277,13 +281,15 @@ neg_binom_rmse <- sqrt(mean((neg_binom_preds - df_test$TARGET)^2))
 # Hurdle Poisson Regression
 Model
 ```{r}
-hurdle_poisson_model <- hurdle(TARGET ~ LabelAppeal + AcidIndex + STARS, data = df_train, dist = "poisson")
+hurdle_poisson_model <- hurdle(TARGET ~ LabelAppeal + AcidIndex + STARS,
+                               data = df_train, dist = "poisson")
 #summary(hurdle_poisson_model)
 ```
 
 Prediction of test-split data (will need to be rounded to full numbers?)
 ```{r}
-hurdle_preds <- predict(hurdle_poisson_model, newdata = df_test, type = "response")
+hurdle_preds <- predict(hurdle_poisson_model, newdata = df_test,
+                        type = "response")
 ```
 
 RMSE
@@ -294,7 +300,8 @@ hurdle_rmse <- sqrt(mean((hurdle_preds - df_test$TARGET)^2))
 # Zero-Inflated Poisson Regression
 Model
 ```{r}
-zip_model <- zeroinfl(TARGET ~ LabelAppeal + AcidIndex + STARS | 1, data = df_train, dist = "poisson")
+zip_model <- zeroinfl(TARGET ~ LabelAppeal + AcidIndex + STARS | 1,
+                      data = df_train, dist = "poisson")
 summary(zip_model)
 ```
 
@@ -311,7 +318,8 @@ zip_rmse <- sqrt(mean((zip_preds - df_test$TARGET)^2))
 # Compare RMSE
 ```{r}
 comparison <- data.frame(
-  Model = c("Poisson", "Negative Binomial", "Hurdle Poisson", "Zero-Inflated Poisson"),
+  Model = c("Poisson", "Negative Binomial", "Hurdle Poisson",
+            "Zero-Inflated Poisson"),
   RMSE = c(poisson_rmse, neg_binom_rmse, hurdle_rmse, zip_rmse)
 )
 
@@ -319,6 +327,7 @@ print(comparison)
 ```
 # Predict using the hurdle_poisson_model
 ```{r}
-eval_preds <- predict(hurdle_poisson_model, newdata = df_wine_eval_transformed, type = "response")
+eval_preds <- predict(hurdle_poisson_model,
+                      newdata = df_wine_eval_transformed, type = "response")
 ```
 
