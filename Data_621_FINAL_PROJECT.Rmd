@@ -61,31 +61,35 @@ head(df_extremism,n=3)
 
 ## df_hate_crime
 
-```{r}
+
+### Summary
+```{r, echo=FALSE}
 summary(df_hate_crime)
 ```
 ### skim
 
-```{r}
+```{r, echo=FALSE}
 print(skim(df_hate_crime))
 ```
 
 
 ## df_extremism
 
-```{r}
+### Summary
+
+```{r, echo=FALSE}
 summary(df_extremism)
 ```
 
 ### Skim
 
-```{r}
+```{r, echo=FALSE}
 print(skim(df_extremism))
 ```
 
 ### Describe()
 
-```{r}
+```{r, echo=FALSE}
 describe(df_extremism)
 ```
 
@@ -93,28 +97,28 @@ describe(df_extremism)
 
 ## df_hate_crime
 
-```{r, warning=FALSE}
+```{r, echo=FALSE, warning=FALSE}
 ggcorr(df_hate_crime)
 ```
 
-```{r, warning=FALSE}
+```{r, echo=FALSE, warning=FALSE}
 temp_data <- char2numeric(df_hate_crime)
 (cor_matrix <- cor(temp_data, use='complete.obs'))
 ```
 
-```{r}
+```{r, echo=FALSE}
 rm(temp_data)
 ```
 
 
 ## df_extremism
 
-```{r, warning=FALSE}
+```{r, echo=FALSE,warning=FALSE}
 temp_data <- char2numeric(df_extremism)
 ggcorr(temp_data)
 ```
 
-```{r}
+```{r, echo=FALSE}
 (cor_matrix <- cor(temp_data%>%select_if(is.numeric), use='complete.obs'))
 ```
 
@@ -123,3 +127,27 @@ ggcorr(temp_data)
 rm(git_url,temp_data)
 ```
 
+
+
+```{r, echo=FALSE}
+
+# add binary column to each dataset
+df_hate_crime <- df_hate_crime %>%
+  mutate(Anti_semitic = ifelse(grepl("Anti-Jewish",
+                                     bias_desc, ignore.case = TRUE), 1, 0))
+
+df_extremism <- df_extremism %>%
+  mutate(Anti_semitic = ifelse(grepl("^Antisemitic*",
+                                     type, ignore.case = TRUE), 1, 0))
+
+# get counts
+
+cnt_hate <- sum(df_hate_crime$Anti_semitic == 1)
+cnt_extremism <- sum(df_extremism$Anti_semitic == 1)
+
+cat("Number of Anti_semitic column reports in hatecrime.csv is:",
+    cnt_hate,
+    "\nNumber of Anti_semitic column reports in extremism.csv is:",
+    cnt_extremism,"\n")
+
+```
