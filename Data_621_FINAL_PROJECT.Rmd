@@ -1,5 +1,5 @@
 ---
-title: "DATA 621:FINAL PROJECT"
+title: "DATA 621: BUSINESS ANALYTICS AND DATA MINING FINA PROJECT"
 date: "Last edited `r format(Sys.time(), '%B %d, %Y')`"
 author: "Group 2 - Gabriel Campos, Melissa Bowman, Alexander Khaykin, & Jennifer Abinette"
 output:
@@ -12,20 +12,114 @@ urlcolor: blue
 ---
 
 
-
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE)
-library(blsR)
-bls_set_key("92479268e6994036b7f4c28bf11d946c")
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+library(dplyr)
+library(tidyr)
+library(tidyverse)
+library(ggplot2)
+library(GGally)
+library(Hmisc)
+library(corrplot)
+library(PerformanceAnalytics)
+library(scales)
+library(MASS)
+library(gridExtra)
+library(psych)
+library(skimr)
 ```
 
-## Import Data using Bureau of Labor and Statitistics API
+
+# **Load the data**
+
+```{r data-import, echo=FALSE}
+git_url<-
+  "https://raw.githubusercontent.com/GitableGabe/Data621_Data/main/"
+
+```
+
+## hate_crime.csv
 
 ```{r}
-cpi_load <- get_series_table("CUUR0000SA0",start_year=1997,end_year=2023)
-ui_load  <- get_series_table("LNS14000000",start_year=1997,end_year=2023)
+
+df_hate_crime <- 
+  read.csv(paste0(git_url,"hate_crime.csv"))
+head(df_hate_crime,n=3)
+
 ```
 
-[FBI API DATA](https://cde.ucr.cjis.gov/LATEST/webapp/#/pages/docApi)
-[FBI API request link](https://api.data.gov/signup/)
+## extremism.csv
+
+```{r}
+
+df_extremism <- 
+  read.csv(paste0(git_url,"extremism.csv"))
+head(df_extremism,n=3)
+
+```
+
+# Summary data
+
+## df_hate_crime
+
+```{r}
+summary(df_hate_crime)
+```
+### skim
+
+```{r}
+print(skim(df_hate_crime))
+```
+
+
+## df_extremism
+
+```{r}
+summary(df_extremism)
+```
+
+### Skim
+
+```{r}
+print(skim(df_extremism))
+```
+
+### Describe()
+
+```{r}
+describe(df_extremism)
+```
+
+# Correlation plots
+
+## df_hate_crime
+
+```{r, warning=FALSE}
+ggcorr(df_hate_crime)
+```
+
+```{r, warning=FALSE}
+temp_data <- char2numeric(df_hate_crime)
+(cor_matrix <- cor(temp_data, use='complete.obs'))
+```
+
+```{r}
+rm(temp_data)
+```
+
+
+## df_extremism
+
+```{r, warning=FALSE}
+temp_data <- char2numeric(df_extremism)
+ggcorr(temp_data)
+```
+
+```{r}
+(cor_matrix <- cor(temp_data%>%select_if(is.numeric), use='complete.obs'))
+```
+
+
+```{r, echo=FALSE}
+rm(git_url,temp_data)
+```
+
