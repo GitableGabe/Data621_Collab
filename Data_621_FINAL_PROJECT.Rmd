@@ -184,3 +184,4 @@ labels_extremism_training <- labels[index]
 # Create testing dataset
 df_extremism_testing <- features[-index, ]
 labels_extremism_testing <- labels[-index]
+```
