@@ -136,6 +136,9 @@ rm(git_url,temp_data)
 df_hate_crime <- df_hate_crime %>%
   mutate(Anti_semitic = ifelse(grepl("Anti-Jewish",
                                      bias_desc, ignore.case = TRUE), 1, 0))
+df_hate_crime <- df_hate_crime %>%
+  mutate(Violent = ifelse(grepl("*Assault*|*Abduction*|*Rape*|*Kidnapping*|*Murder*",
+                                     offense_name, ignore.case = TRUE), 1, 0))
 
 df_extremism <- df_extremism %>%
   mutate(Anti_semitic = ifelse(grepl("^Antisemitic*",
@@ -160,7 +163,7 @@ cat("Number of Anti_semitic column reports in hatecrime.csv is:",
 features <- df_hate_crime[, !(names(df_hate_crime) %in% c('Anti_semitic'))]
 labels <- df_hate_crime$Anti_semitic
 set.seed(123)
-index <- createDataPartition(labels, p = 0.8, list = FALSE)
+index <- createDataPartition(labels, p = 0.7, list = FALSE)
 
 #training data
 df_hate_training <- features[index, ]
@@ -175,7 +178,7 @@ labels_hate_testing <- labels[-index]
 features <- df_extremism[, !(names(df_extremism) %in% c('Anti_semitic'))]
 labels <- df_extremism$Anti_semitic
 set.seed(123)
-index <- createDataPartition(labels, p = 0.8, list = FALSE)
+index <- createDataPartition(labels, p = 0.7, list = FALSE)
 
 #training data
 df_extremism_training <- features[index, ]
