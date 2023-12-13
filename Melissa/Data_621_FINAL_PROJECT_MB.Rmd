@@ -1,0 +1,189 @@
+---
+title: "DATA 621: BUSINESS ANALYTICS AND DATA MINING FINA PROJECT"
+date: "Last edited `r format(Sys.time(), '%B %d, %Y')`"
+author: "Group 2 - Gabriel Campos, Melissa Bowman, Alexander Khaykin, & Jennifer Abinette"
+output:
+  pdf_document:
+    latex_engine: xelatex
+  geometry: "left=0.5cm,right=0.5cm,top=1cm,bottom=2cm"
+  html_document:
+    df_print: paged
+urlcolor: blue
+---
+
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+library(dplyr)
+library(tidyr)
+library(tidyverse)
+library(ggplot2)
+library(GGally)
+library(Hmisc)
+library(corrplot)
+library(PerformanceAnalytics)
+library(scales)
+library(MASS)
+library(gridExtra)
+library(psych)
+library(skimr)
+library(caret)
+```
+
+
+# **Load the data**
+
+```{r data-import, echo=FALSE}
+git_url<-
+  "https://raw.githubusercontent.com/GitableGabe/Data621_Data/main/"
+
+```
+
+## hate_crime.csv
+
+```{r}
+
+df_hate_crime <- 
+  read.csv(paste0(git_url,"hate_crime.csv"))
+head(df_hate_crime,n=3)
+
+```
+
+# Summary data
+
+## df_hate_crime
+
+
+### Summary
+```{r, echo=FALSE}
+summary(df_hate_crime)
+```
+### skim
+
+```{r, echo=FALSE}
+print(skim(df_hate_crime))
+```
+
+
+# Binary Column and Count
+
+```{r, echo=FALSE}
+
+# add binary column to each dataset
+df_hate_crime <- df_hate_crime %>%
+  mutate(Anti_semitic_crimes = ifelse(grepl("Anti-Jewish",
+                                     bias_desc, ignore.case = TRUE), 1, 0))
+# df_hate_crime <- df_hate_crime %>%
+#   mutate(Violent = ifelse(grepl("*Assault*|*Abduction*|*Rape*|*Kidnapping*|*Murder*",
+#                                      offense_name, ignore.case = TRUE), 1, 0))
+
+# get counts
+
+cnt_hate <- sum(df_hate_crime$Anti_semitic == 1)
+total_hate<-nrow(df_hate_crime)
+
+cat("Number of Anti_semitic column reports in hatecrime.csv is:",
+    cnt_hate," out of ",total_hate,"\n")
+
+```
+
+
+
+```{r}
+features <- df_hate_corr[, !(names(df_hate_corr) %in% c('Anti_semitic'))]
+labels <- df_hate_corr$Anti_semitic_crimes
+set.seed(123)
+index <- createDataPartition(labels, p = 0.8, list = FALSE)
+
+#training data
+df_hate_training <- features[index, ]
+labels_hate_training <- labels[index]
+
+# Create testing dataset
+df_hate_testing <- features[-index, ]
+labels_hate_testing <- labels[-index]
+
+```
+
+# Cleanup
+
+```{r}
+
+df_hate_training <- df_hate_training %>% dplyr::select(-c(adult_victim_count,juvenile_victim_count,adult_offender_count,juvenile_offender_count,total_individual_victims,incident_date))
+df_hate_testing <- df_hate_testing %>% dplyr::select(-c(adult_victim_count,juvenile_victim_count,adult_offender_count,juvenile_offender_count,total_individual_victims,incident_date))
+
+```
+
+# Transform to Numeric | Test/Training Dataframes
+
+```{r}
+# df_hate_corr <- char2numeric(df_hate_crime)
+
+add_frequency_encoding <- function(data) {
+  for (col in names(data)) {
+    # Compute frequencies
+    frequency_map <- table(data[[col]],useNA = "always")
+    
+    # Create a new column with frequency encoding
+    new_col_name <- paste0(col, "_frequency")
+    data[[new_col_name]] <- frequency_map[data[[col]]]
+  }
+  
+  return(data)
+}
+
+# Use the function to add frequency encoding columns
+test <- add_frequency_encoding(df_hate_training)
+
+# View the result
+print(df_hate_training)
+```
+
+
+
+# Histograms
+
+```{r, fig.height=18,fig.width=18,fig.ncol=1}
+df_hate_training %>% 
+  gather() %>% 
+  ggplot(aes(x = value)) + 
+  geom_histogram(fill = "cadetblue") + 
+  facet_wrap(~key, scales = "free")
+```
+
+# Correlation plots
+
+## df_hate_crime
+
+```{r, echo=FALSE, warning=FALSE}
+ggcorr(df_hate_crime)
+```
+
+```{r, echo=FALSE, warning=FALSE}
+
+(cor_matrix <- cor(df_hate_training, use='complete.obs'))
+```
+
+
+
+#Checking to see if we need to weight anything
+```{r}
+# Fit a linear regression model with all variables
+lm_model <- lm(Anti_semitic_crimes ~ ., data = df_hate_training)
+
+# Extract residuals
+residuals_all <- residuals(lm_model)
+
+# Plot residuals for each predictor variable
+par(mfrow = c(2, 2))  # Set up a 2x2 grid for subplots
+
+for (variable in names(df_hate_training)) {
+  if (variable != "Anti_semitic_crimes") {  # Exclude the response variable
+    plot(df_hate_training[[variable]], residuals_all,
+         main = paste("Residuals vs", variable),
+         xlab = variable, ylab = "Residuals")
+  }
+}
+
+# Reset the plotting parameters
+par(mfrow = c(1, 1))
+```
