@@ -63,7 +63,6 @@ summary(df_hate_crime)
 print(skim(df_hate_crime))
 ```
 
-
 # Correlation plots
 
 ## df_hate_crime
@@ -124,3 +123,11 @@ df_hate_testing <- features[-index, ]
 labels_hate_testing <- labels[-index]
 
 ```
+
+```{r}
+
+df_hate_training <- df_hate_training %>% dplyr::select(-c(adult_victim_count,juvenile_victim_count,adult_offender_count,juvenile_offender_count,total_individual_victims))
+df_hate_testing <- df_hate_testing %>% dplyr::select(-c(adult_victim_count,juvenile_victim_count,adult_offender_count,juvenile_offender_count,total_individual_victims))
+
+```
+
