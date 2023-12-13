@@ -48,16 +48,6 @@ head(df_hate_crime,n=3)
 
 ```
 
-## extremism.csv
-
-```{r}
-
-df_extremism <- 
-  read.csv(paste0(git_url,"extremism.csv"))
-head(df_extremism,n=3)
-
-```
-
 # Summary data
 
 ## df_hate_crime
@@ -74,26 +64,6 @@ print(skim(df_hate_crime))
 ```
 
 
-## df_extremism
-
-### Summary
-
-```{r, echo=FALSE}
-summary(df_extremism)
-```
-
-### Skim
-
-```{r, echo=FALSE}
-print(skim(df_extremism))
-```
-
-### Describe()
-
-```{r, echo=FALSE}
-describe(df_extremism)
-```
-
 # Correlation plots
 
 ## df_hate_crime
@@ -106,23 +76,6 @@ ggcorr(df_hate_crime)
 temp_data <- char2numeric(df_hate_crime)
 (cor_matrix <- cor(temp_data, use='complete.obs'))
 ```
-
-```{r, echo=FALSE}
-rm(temp_data)
-```
-
-
-## df_extremism
-
-```{r, echo=FALSE,warning=FALSE}
-temp_data <- char2numeric(df_extremism)
-ggcorr(temp_data)
-```
-
-```{r, echo=FALSE}
-(cor_matrix <- cor(temp_data%>%select_if(is.numeric), use='complete.obs'))
-```
-
 
 ```{r, echo=FALSE}
 rm(git_url,temp_data)
@@ -140,22 +93,13 @@ df_hate_crime <- df_hate_crime %>%
   mutate(Violent = ifelse(grepl("*Assault*|*Abduction*|*Rape*|*Kidnapping*|*Murder*",
                                      offense_name, ignore.case = TRUE), 1, 0))
 
-df_extremism <- df_extremism %>%
-  mutate(Anti_semitic = ifelse(grepl("^Antisemitic*",
-                                     type, ignore.case = TRUE), 1, 0))
-
 # get counts
 
 cnt_hate <- sum(df_hate_crime$Anti_semitic == 1)
 total_hate<-nrow(df_hate_crime)
-cnt_extremism <- sum(df_extremism$Anti_semitic == 1)
-total_extremism<-nrow(df_extremism)
-
 
 cat("Number of Anti_semitic column reports in hatecrime.csv is:",
-    cnt_hate," out of ",total_hate,
-    "\nNumber of Anti_semitic column reports in extremism.csv is:",
-    cnt_extremism," out of ",total_extremism,"\n")
+    cnt_hate," out of ",total_hate,"\n")
 
 ```
 
@@ -163,7 +107,7 @@ cat("Number of Anti_semitic column reports in hatecrime.csv is:",
 features <- df_hate_crime[, !(names(df_hate_crime) %in% c('Anti_semitic'))]
 labels <- df_hate_crime$Anti_semitic
 set.seed(123)
-index <- createDataPartition(labels, p = 0.7, list = FALSE)
+index <- createDataPartition(labels, p = 0.8, list = FALSE)
 
 #training data
 df_hate_training <- features[index, ]
@@ -172,19 +116,4 @@ labels_hate_training <- labels[index]
 # Create testing dataset
 df_hate_testing <- features[-index, ]
 labels_hate_testing <- labels[-index]
-```
-
-```{r}
-features <- df_extremism[, !(names(df_extremism) %in% c('Anti_semitic'))]
-labels <- df_extremism$Anti_semitic
-set.seed(123)
-index <- createDataPartition(labels, p = 0.7, list = FALSE)
-
-#training data
-df_extremism_training <- features[index, ]
-labels_extremism_training <- labels[index]
-
-# Create testing dataset
-df_extremism_testing <- features[-index, ]
-labels_extremism_testing <- labels[-index]
 ```
