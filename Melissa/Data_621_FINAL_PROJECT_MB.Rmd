@@ -68,6 +68,9 @@ print(skim(df_hate_crime))
 
 ```{r, echo=FALSE}
 
+df_hate_crime%>%
+  dplyr::select(-c(adult_victim_count,juvenile_victim_count,adult_offender_count,juvenile_offender_count,total_individual_victims,incident_date))
+
 # add binary column to each dataset
 df_hate_crime <- df_hate_crime %>%
   mutate(Anti_semitic_crimes = ifelse(grepl("Anti-Jewish",
@@ -86,104 +89,97 @@ cat("Number of Anti_semitic column reports in hatecrime.csv is:",
 
 ```
 
-
-
-```{r}
-features <- df_hate_corr[, !(names(df_hate_corr) %in% c('Anti_semitic'))]
-labels <- df_hate_corr$Anti_semitic_crimes
-set.seed(123)
-index <- createDataPartition(labels, p = 0.8, list = FALSE)
-
-#training data
-df_hate_training <- features[index, ]
-labels_hate_training <- labels[index]
-
-# Create testing dataset
-df_hate_testing <- features[-index, ]
-labels_hate_testing <- labels[-index]
-
-```
-
-# Cleanup
-
-```{r}
-
-df_hate_training <- df_hate_training %>% dplyr::select(-c(adult_victim_count,juvenile_victim_count,adult_offender_count,juvenile_offender_count,total_individual_victims,incident_date))
-df_hate_testing <- df_hate_testing %>% dplyr::select(-c(adult_victim_count,juvenile_victim_count,adult_offender_count,juvenile_offender_count,total_individual_victims,incident_date))
-
-```
-
 # Transform to Numeric | Test/Training Dataframes
 
 ```{r}
-# df_hate_corr <- char2numeric(df_hate_crime)
+df_hate_corr <- df_hate_crime
+# frequency_map <- table(df_hate_crime$incident_id)
+# df_hate_crime$incident_id_freq <- frequency_map[df_hate_crime$incident_id]
 
-add_frequency_encoding <- function(data) {
-  for (col in names(data)) {
-    # Compute frequencies
-    frequency_map <- table(data[[col]],useNA = "always")
-    
-    # Create a new column with frequency encoding
-    new_col_name <- paste0(col, "_frequency")
-    data[[new_col_name]] <- frequency_map[data[[col]]]
-  }
+add_freq <- function(data, column_name) {
+  # Compute frequencies, including NAs
+  frequency_map <- table(data[[column_name]], useNA = "always")
+  
+  # Create a new column with frequency encoding (including NAs)
+  new_col_name <- paste0(column_name, "_freq")
+  data[[new_col_name]] <- frequency_map[match(data[[column_name]], names(frequency_map))]
   
   return(data)
 }
 
-# Use the function to add frequency encoding columns
-test <- add_frequency_encoding(df_hate_training)
+# Loop through all columns and add frequency encoding columns (including NAs)
+for (col in names(df_hate_corr)) {
+  df_hate_corr <- add_freq(df_hate_corr, col)
+}
 
-# View the result
-print(df_hate_training)
+# incase dropping categorical data is needed, method to remove is below
+
+test<-df_hate_corr%>%
+  dplyr::select(matches("_freq"), matches("^Anti"))
+
 ```
 
+```{r}
+set.seed(123)
 
+train_indices <- sample(seq_len(nrow(df_hate_corr)), 0.8 * nrow(df_hate_corr))
+
+# Create training dataset
+df_hate_train <- df_hate_corr[train_indices, ]
+
+# Create test dataset
+df_hate_test <- df_hate_corr[-train_indices, ]
+```
 
 # Histograms
 
 ```{r, fig.height=18,fig.width=18,fig.ncol=1}
-df_hate_training %>% 
+df_hate_train %>%
+  dplyr::select( ends_with("_freq"))%>%
   gather() %>% 
   ggplot(aes(x = value)) + 
   geom_histogram(fill = "cadetblue") + 
   facet_wrap(~key, scales = "free")
 ```
 
+
+
 # Correlation plots
 
 ## df_hate_crime
 
-```{r, echo=FALSE, warning=FALSE}
-ggcorr(df_hate_crime)
+```{r, fig.height=15,fig.width=15,fig.ncol=1, echo=FALSE, warning=FALSE}
+ggcorr(df_hate_crime%>%
+                     dplyr::select(-matches("_freq")))
 ```
 
 ```{r, echo=FALSE, warning=FALSE}
 
-(cor_matrix <- cor(df_hate_training, use='complete.obs'))
+(cor_matrix <- cor(df_hate_train%>%
+                     dplyr::select( ends_with("_freq")), use='complete.obs'))
 ```
 
 
 
 #Checking to see if we need to weight anything
 ```{r}
-# Fit a linear regression model with all variables
-lm_model <- lm(Anti_semitic_crimes ~ ., data = df_hate_training)
-
-# Extract residuals
-residuals_all <- residuals(lm_model)
-
-# Plot residuals for each predictor variable
-par(mfrow = c(2, 2))  # Set up a 2x2 grid for subplots
-
-for (variable in names(df_hate_training)) {
-  if (variable != "Anti_semitic_crimes") {  # Exclude the response variable
-    plot(df_hate_training[[variable]], residuals_all,
-         main = paste("Residuals vs", variable),
-         xlab = variable, ylab = "Residuals")
-  }
-}
-
-# Reset the plotting parameters
-par(mfrow = c(1, 1))
+# # Fit a linear regression model with all variables
+# lm_model <- lm(Anti_semitic_crimes ~ ., data = df_hate_train)
+# 
+# # Extract residuals
+# residuals_all <- residuals(lm_model)
+# 
+# # Plot residuals for each predictor variable
+# par(mfrow = c(2, 2))  # Set up a 2x2 grid for subplots
+# 
+# for (variable in names(df_hate_train)) {
+#   if (variable != "Anti_semitic_crimes") {  # Exclude the response variable
+#     plot(df_hate_train[[variable]], residuals_all,
+#          main = paste("Residuals vs", variable),
+#          xlab = variable, ylab = "Residuals")
+#   }
+# }
+# 
+# # Reset the plotting parameters
+# par(mfrow = c(1, 1))
 ```
