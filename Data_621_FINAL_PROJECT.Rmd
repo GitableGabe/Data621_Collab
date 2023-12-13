@@ -124,6 +124,8 @@ labels_hate_testing <- labels[-index]
 
 ```
 
+# Cleanup
+
 ```{r}
 
 df_hate_training <- df_hate_training %>% dplyr::select(-c(adult_victim_count,juvenile_victim_count,adult_offender_count,juvenile_offender_count,total_individual_victims))
@@ -131,3 +133,12 @@ df_hate_testing <- df_hate_testing %>% dplyr::select(-c(adult_victim_count,juven
 
 ```
 
+# Histograms
+
+```{r, fig.height=18,fig.width=18,fig.ncol=1}
+df_hate_training %>% 
+  gather() %>% 
+  ggplot(aes(x = value)) + 
+  geom_histogram(fill = "cadetblue") + 
+  facet_wrap(~key, scales = "free")
+```
