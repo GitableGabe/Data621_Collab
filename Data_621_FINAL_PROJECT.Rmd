@@ -81,17 +81,17 @@ temp_data <- char2numeric(df_hate_crime)
 rm(git_url,temp_data)
 ```
 
-
+# Binary Column and Count
 
 ```{r, echo=FALSE}
 
 # add binary column to each dataset
 df_hate_crime <- df_hate_crime %>%
-  mutate(Anti_semitic = ifelse(grepl("Anti-Jewish",
+  mutate(Anti_semitic_crimes = ifelse(grepl("Anti-Jewish",
                                      bias_desc, ignore.case = TRUE), 1, 0))
-df_hate_crime <- df_hate_crime %>%
-  mutate(Violent = ifelse(grepl("*Assault*|*Abduction*|*Rape*|*Kidnapping*|*Murder*",
-                                     offense_name, ignore.case = TRUE), 1, 0))
+# df_hate_crime <- df_hate_crime %>%
+#   mutate(Violent = ifelse(grepl("*Assault*|*Abduction*|*Rape*|*Kidnapping*|*Murder*",
+#                                      offense_name, ignore.case = TRUE), 1, 0))
 
 # get counts
 
@@ -102,10 +102,16 @@ cat("Number of Anti_semitic column reports in hatecrime.csv is:",
     cnt_hate," out of ",total_hate,"\n")
 
 ```
+# Transform to Numeric | Test/Training Dataframes
 
 ```{r}
-features <- df_hate_crime[, !(names(df_hate_crime) %in% c('Anti_semitic'))]
-labels <- df_hate_crime$Anti_semitic
+df_hate_corr <- char2numeric(df_hate_crime)
+```
+
+
+```{r}
+features <- df_hate_corr[, !(names(df_hate_corr) %in% c('Anti_semitic'))]
+labels <- df_hate_corr$Anti_semitic_crimes
 set.seed(123)
 index <- createDataPartition(labels, p = 0.8, list = FALSE)
 
@@ -116,4 +122,5 @@ labels_hate_training <- labels[index]
 # Create testing dataset
 df_hate_testing <- features[-index, ]
 labels_hate_testing <- labels[-index]
+
 ```
