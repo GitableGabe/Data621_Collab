@@ -68,7 +68,7 @@ print(skim(df_hate_crime))
 
 ```{r, echo=FALSE}
 
-df_hate_crime%>%
+df_hate_crime <- df_hate_crime%>%
   dplyr::select(-c(adult_victim_count,juvenile_victim_count,adult_offender_count,juvenile_offender_count,total_individual_victims,incident_date))
 
 # add binary column to each dataset
@@ -200,57 +200,70 @@ str(df_hate_train)
 #Checking to see if we need to weight anything
 #Checking to see if we need to weight anything
 ```{r,fig.height=15,fig.width=15,fig.ncol=1,}
-# Fit a linear regression model with all variables
-lm_model <- lm(Anti_semitic_crimes ~ ., data = df_hate_train)
-
-# Extract residuals
-residuals_all <- residuals(lm_model)
-
-# Plot residuals for each predictor variable
-par(mfrow = c(2, 2))  # Set up a 2x2 grid for subplots
-
-for (variable in names(df_hate_train)) {
-  if (variable != "Anti_semitic_crimes") {  # Exclude the response variable
-    plot(df_hate_train[[variable]], residuals_all,
-         main = paste("Residuals vs", variable),
-         xlab = variable, ylab = "Residuals")
-  }
-}
-
-# Reset the plotting parameters
-par(mfrow = c(1, 1))
-```
-
-
-
-```{r}
-# # Create an empty list to store the transformed columns
-# transformed_columns <- list()
+# # Fit a linear regression model with all variables
+# lm_model <- lm(Anti_semitic_crimes ~ ., data = df_hate_train)
 # 
-# # Define the names of columns to exclude from transformation because there variables response must be positive 
-# exclude_columns <- c("Anti_semitic_crimes")
+# # Extract residuals
+# residuals_all <- residuals(lm_model)
 # 
-# # Iterate through the columns in df_crime_train
-# for (col_name in names(df_hate_train)) {
-#   # Convert the column to a list and check if it's numeric and not in the exclude list
-#   if (is.numeric(df_hate_train[[col_name]])) {
-#     col_list <- as.numeric(as.list(df_hate_train[[col_name]]))
-#     
-#     # Find optimal lambda for Box-Cox transformation
-#     bc <- boxcox(col_list ~ 1, lambda = seq(-2, 2, 0.1))
-#     lambda_col <- bc$x[which.max(bc$y)]
-#     
-#     # Apply the Box-Cox transformation
-#     col_new <- ifelse(col_list==0, log(col_list), (col_list^lambda_col - 1) / lambda_col)
-#     
-#     # Store the transformed column in the list
-#     transformed_columns[[col_name]] <- col_new
+# # Plot residuals for each predictor variable
+# par(mfrow = c(2, 2))  # Set up a 2x2 grid for subplots
+# 
+# for (variable in names(df_hate_train)) {
+#   if (variable != "Anti_semitic_crimes") {  # Exclude the response variable
+#     plot(df_hate_train[[variable]], residuals_all,
+#          main = paste("Residuals vs", variable),
+#          xlab = variable, ylab = "Residuals")
 #   }
 # }
 # 
-# # Convert the list of transformed columns into a DataFrame
-# df_transformed <- as.data.frame(transformed_columns)
+# # Reset the plotting parameters
+# par(mfrow = c(1, 1))
+```
+
+```{r}
+na_count <- colSums(is.na(df_hate_train))
+
+# Display columns with NA values
+columns_with_na <- names(na_count[na_count > 0])
+print(columns_with_na)
+```
+
+
+```{r}
+unique(df_hate_train$multiple_offense_freq)
+```
+
+
+```{r}
+# Create an empty list to store the transformed columns
+transformed_columns <- list()
+
+# Define the names of columns to exclude from transformation because there variables response must be positive 
+exclude_columns <- c("incident_id_freq","Anti_semitic_crimes_freq","multiple_offense_freq","multiple_offense_freq","Anti-semitic")  
+
+# Iterate through the columns in df_crime_train
+for (col_name in names(df_hate_train)) {
+  # Convert the column to a list and check if it's numeric and not in the exclude list
+  if (is.numeric(df_hate_train[[col_name]]) && !(col_name %in% exclude_columns)) {
+    col_list <- as.numeric(as.list(df_hate_train[[col_name]]))
+    
+    # Find optimal lambda for Box-Cox transformation
+    bc <- boxcox(col_list ~ 1, lambda = seq(-2, 2, 0.1))
+    lambda_col <- bc$x[which.max(bc$y)]
+    
+    # Apply the Box-Cox transformation
+    col_new <- ifelse(col_list==0, log(col_list), (col_list^lambda_col - 1) / lambda_col)
+    
+    # Store the transformed column in the list
+    transformed_columns[[col_name]] <- col_new
+  }
+}
+
+# Convert the list of transformed columns into a DataFrame
+df_transformed <- as.data.frame(transformed_columns)
 ```
 ```
+
 
 
