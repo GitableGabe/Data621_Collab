@@ -199,7 +199,7 @@ str(df_hate_train)
 
 #Checking to see if we need to weight anything
 #Checking to see if we need to weight anything
-```{r,fig.height=15,fig.width=15,fig.ncol=1,}
+```{r,fig.height=4,fig.width=4,fig.ncol=1,}
 # # Fit a linear regression model with all variables
 # lm_model <- lm(Anti_semitic_crimes ~ ., data = df_hate_train)
 # 
@@ -221,49 +221,230 @@ str(df_hate_train)
 # par(mfrow = c(1, 1))
 ```
 
-```{r}
-na_count <- colSums(is.na(df_hate_train))
-
-# Display columns with NA values
-columns_with_na <- names(na_count[na_count > 0])
-print(columns_with_na)
-```
-
 
 ```{r}
-unique(df_hate_train$multiple_offense_freq)
+# Convert a DataFrame column to a list
+freq_list <- as.numeric(as.list(df_hate_train$data_year_freq))
+
+#find optimal lambda for Box-Cox transformation 
+bc <- boxcox(freq_list~ 1, lambda = seq(-2,2,0.1))
+lambda_data_year <- bc$x[which.max(bc$y)]
+
+# Apply the Box-Cox transformation
+norm_data_year_freq <- (freq_list^lambda_data_year-1)/lambda_data_year
+
+rm(bc,freq_list)
+# hist(data_year_freq_norm )
+# hist(df_hate_train$data_year_freq)
 ```
 
 
 ```{r}
-# Create an empty list to store the transformed columns
-transformed_columns <- list()
+# Convert a DataFrame column to a list
+freq_list <- as.numeric(as.list(df_hate_train$ori_freq))
 
-# Define the names of columns to exclude from transformation because there variables response must be positive 
-exclude_columns <- c("incident_id_freq","Anti_semitic_crimes_freq","multiple_offense_freq","multiple_offense_freq","Anti-semitic")  
+#find optimal lambda for Box-Cox transformation 
+bc <- boxcox(freq_list~ 1, lambda = seq(-2,2,0.1))
+lambda_ori <- bc$x[which.max(bc$y)]
 
-# Iterate through the columns in df_crime_train
-for (col_name in names(df_hate_train)) {
-  # Convert the column to a list and check if it's numeric and not in the exclude list
-  if (is.numeric(df_hate_train[[col_name]]) && !(col_name %in% exclude_columns)) {
-    col_list <- as.numeric(as.list(df_hate_train[[col_name]]))
-    
-    # Find optimal lambda for Box-Cox transformation
-    bc <- boxcox(col_list ~ 1, lambda = seq(-2, 2, 0.1))
-    lambda_col <- bc$x[which.max(bc$y)]
-    
-    # Apply the Box-Cox transformation
-    col_new <- ifelse(col_list==0, log(col_list), (col_list^lambda_col - 1) / lambda_col)
-    
-    # Store the transformed column in the list
-    transformed_columns[[col_name]] <- col_new
-  }
-}
+# Apply the Box-Cox transformation
+norm_ori_freq <- (freq_list^lambda_ori-1)/lambda_ori
 
-# Convert the list of transformed columns into a DataFrame
-df_transformed <- as.data.frame(transformed_columns)
-```
+rm(bc,freq_list)
+# hist(data_year_freq_norm )
+# hist(df_hate_train$data_year_freq)
 ```
 
+```{r}
+# Convert a DataFrame column to a list
+freq_list <- as.numeric(as.list(df_hate_train$pug_agency_name_freq))
+
+#find optimal lambda for Box-Cox transformation 
+bc <- boxcox(freq_list~ 1, lambda = seq(-2,2,0.1))
+lambda_pug_agency_name <- bc$x[which.max(bc$y)]
+
+# Apply the Box-Cox transformation
+norm_pug_agency_name_freq <- (freq_list^lambda_pug_agency_name-1)/lambda_pug_agency_name
+
+rm(bc,freq_list)
+# hist(data_year_freq_norm )
+# hist(df_hate_train$pug_agency_name_freq)
+```
+
+```{r}
+# Convert a DataFrame column to a list
+freq_list <- as.numeric(as.list(df_hate_train$state_abbr_freq))
+
+#find optimal lambda for Box-Cox transformation 
+bc <- boxcox(freq_list~ 1, lambda = seq(-2,2,0.1))
+lambda_state_abbr <- bc$x[which.max(bc$y)]
+
+# Apply the Box-Cox transformation
+norm_state_abbr_freq <- (freq_list^lambda_state_abbr-1)/lambda_state_abbr
+
+rm(bc,freq_list)
+# hist(data_year_freq_norm )
+# hist(df_hate_train$state_abbr_freq)
+```
+
+```{r}
+# Convert a DataFrame column to a list
+freq_list <- as.numeric(as.list(df_hate_train$state_name_freq))
+
+#find optimal lambda for Box-Cox transformation 
+bc <- boxcox(freq_list~ 1, lambda = seq(-2,2,0.1))
+lambda_state_name <- bc$x[which.max(bc$y)]
+
+# Apply the Box-Cox transformation
+norm_state_name_freq <- (freq_list^lambda_state_name-1)/lambda_state_name
+
+rm(bc,freq_list)
+# hist(data_year_freq_norm )
+# hist(df_hate_train$state_name_freq)
+```
+
+```{r}
+# Convert a DataFrame column to a list
+freq_list <- as.numeric(as.list(df_hate_train$bias_desc_freq))
+
+#find optimal lambda for Box-Cox transformation 
+bc <- boxcox(freq_list~ 1, lambda = seq(-2,2,0.1))
+lambda_bias_desc <- bc$x[which.max(bc$y)]
+
+# Apply the Box-Cox transformation
+norm_bias_desc_freq <- (freq_list^lambda_bias_desc-1)/lambda_bias_desc
+
+rm(bc,freq_list)
+# hist(data_year_freq_norm )
+# hist(df_hate_train$bias_desc_freq)
+```
 
 
+
+```{r}
+df_train_model <- cbind(df_hate_train,
+                 as.data.frame(norm_bias_desc_freq),
+                 as.data.frame(norm_data_year_freq),
+                 as.data.frame(norm_ori_freq),
+                 as.data.frame(norm_pug_agency_name_freq),
+                 as.data.frame(norm_state_abbr_freq),
+                 as.data.frame(norm_state_name_freq))
+```
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+```{r}
+# Convert a DataFrame column to a list
+freq_list <- as.numeric(as.list(df_hate_test$data_year_freq))
+
+#find optimal lambda for Box-Cox transformation 
+bc <- boxcox(freq_list~ 1, lambda = seq(-2,2,0.1))
+lambda_data_year <- bc$x[which.max(bc$y)]
+
+# Apply the Box-Cox transformation
+norm_data_year_freq <- (freq_list^lambda_data_year-1)/lambda_data_year
+
+rm(bc,freq_list)
+# hist(data_year_freq_norm )
+# hist(df_hate_test$data_year_freq)
+```
+
+
+```{r}
+# Convert a DataFrame column to a list
+freq_list <- as.numeric(as.list(df_hate_test$ori_freq))
+
+#find optimal lambda for Box-Cox transformation 
+bc <- boxcox(freq_list~ 1, lambda = seq(-2,2,0.1))
+lambda_ori <- bc$x[which.max(bc$y)]
+
+# Apply the Box-Cox transformation
+norm_ori_freq <- (freq_list^lambda_ori-1)/lambda_ori
+
+rm(bc,freq_list)
+# hist(data_year_freq_norm )
+# hist(df_hate_test$data_year_freq)
+```
+
+```{r}
+# Convert a DataFrame column to a list
+freq_list <- as.numeric(as.list(df_hate_test$pug_agency_name_freq))
+
+#find optimal lambda for Box-Cox transformation 
+bc <- boxcox(freq_list~ 1, lambda = seq(-2,2,0.1))
+lambda_pug_agency_name <- bc$x[which.max(bc$y)]
+
+# Apply the Box-Cox transformation
+norm_pug_agency_name_freq <- (freq_list^lambda_pug_agency_name-1)/lambda_pug_agency_name
+
+rm(bc,freq_list)
+# hist(data_year_freq_norm )
+# hist(df_hate_test$pug_agency_name_freq)
+```
+
+```{r}
+# Convert a DataFrame column to a list
+freq_list <- as.numeric(as.list(df_hate_test$state_abbr_freq))
+
+#find optimal lambda for Box-Cox transformation 
+bc <- boxcox(freq_list~ 1, lambda = seq(-2,2,0.1))
+lambda_state_abbr <- bc$x[which.max(bc$y)]
+
+# Apply the Box-Cox transformation
+norm_state_abbr_freq <- (freq_list^lambda_state_abbr-1)/lambda_state_abbr
+
+rm(bc,freq_list)
+# hist(data_year_freq_norm )
+# hist(df_hate_test$state_abbr_freq)
+```
+
+```{r}
+# Convert a DataFrame column to a list
+freq_list <- as.numeric(as.list(df_hate_test$state_name_freq))
+
+#find optimal lambda for Box-Cox transformation 
+bc <- boxcox(freq_list~ 1, lambda = seq(-2,2,0.1))
+lambda_state_name <- bc$x[which.max(bc$y)]
+
+# Apply the Box-Cox transformation
+norm_state_name_freq <- (freq_list^lambda_state_name-1)/lambda_state_name
+
+rm(bc,freq_list)
+# hist(data_year_freq_norm )
+# hist(df_hate_test$state_name_freq)
+```
+
+```{r}
+# Convert a DataFrame column to a list
+freq_list <- as.numeric(as.list(df_hate_test$bias_desc_freq))
+
+#find optimal lambda for Box-Cox transformation 
+bc <- boxcox(freq_list~ 1, lambda = seq(-2,2,0.1))
+lambda_bias_desc <- bc$x[which.max(bc$y)]
+
+# Apply the Box-Cox transformation
+norm_bias_desc_freq <- (freq_list^lambda_bias_desc-1)/lambda_bias_desc
+
+rm(bc,freq_list)
+# hist(data_year_freq_norm )
+# hist(df_hate_test$bias_desc_freq)
+```
+
+
+
+```{r}
+df_test_model <- cbind(df_hate_test,
+                 as.data.frame(norm_bias_desc_freq),
+                 as.data.frame(norm_data_year_freq),
+                 as.data.frame(norm_ori_freq),
+                 as.data.frame(norm_pug_agency_name_freq),
+                 as.data.frame(norm_state_abbr_freq),
+                 as.data.frame(norm_state_name_freq))
+```
