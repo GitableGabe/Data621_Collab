@@ -57,6 +57,12 @@ head(df_hate_crime,n=3)
 ```{r, echo=FALSE}
 summary(df_hate_crime)
 ```
+### str
+
+```{r, echo=FALSE}
+str(df_hate_crime)
+```
+
 ### skim
 
 ```{r, echo=FALSE}
@@ -68,22 +74,25 @@ print(skim(df_hate_crime))
 ```{r, echo=FALSE}
 
 df_hate_crime <- df_hate_crime%>%
-  dplyr::select(-c(adult_victim_count,juvenile_victim_count,adult_offender_count,juvenile_offender_count,total_individual_victims,incident_date))
+  dplyr::select(-c(adult_victim_count,juvenile_victim_count,adult_offender_count
+                   ,juvenile_offender_count,total_individual_victims,
+                   incident_date))
 
 # add binary column to each dataset
 df_hate_crime <- df_hate_crime %>%
-  mutate(Anti_semitic_crimes = ifelse(grepl("Anti-Jewish",
+  mutate(Antisemitic_crimes = ifelse(grepl("Anti-Jewish",
                                      bias_desc, ignore.case = TRUE), 1, 0))
 # df_hate_crime <- df_hate_crime %>%
-#   mutate(Violent = ifelse(grepl("*Assault*|*Abduction*|*Rape*|*Kidnapping*|*Murder*",
+#   mutate(Violent = ifelse(grepl("*Assault*|*Abduction*|*Rape*|*Kidnapping*
+#|*Murder*",
 #                                      offense_name, ignore.case = TRUE), 1, 0))
 
 # get counts
 
-cnt_hate <- sum(df_hate_crime$Anti_semitic == 1)
+cnt_hate <- sum(df_hate_crime$Antisemitic == 1)
 total_hate<-nrow(df_hate_crime)
 
-cat("Number of Anti_semitic column reports in hatecrime.csv is:",
+cat("Number of Antisemitic column reports in hatecrime.csv is:",
     cnt_hate," out of ",total_hate,"\n")
 
 ```
@@ -181,13 +190,13 @@ ggcorr(df_hate_crime%>%
 
 (cor_matrix <- cor(df_hate_train))
 ```
-## Weighted Values Forgoed
+## Weighted Values 
 
 Our attempt to get the weighted values, hindered our R Notebooks ability to knit. A visual assessment of the plot displayed, indicated a 'fan-like' or 'cone-shaped' pattern was lacking, and therefore the attributes lacked the presence of heteroskedasticity. Ultimately the decision was made to not pursue the weighted values.
 
              #```{r,fig.height=6,fig.width=6,fig.ncol=1,}
              # Fit a linear regression model with all variables
-             lm_model <- lm(Anti_semitic_crimes ~ ., data = df_hate_train)
+             lm_model <- lm(Antisemitic_crimes ~ ., data = df_hate_train)
              
              # Extract residuals
              residuals_all <- residuals(lm_model)
@@ -196,7 +205,7 @@ Our attempt to get the weighted values, hindered our R Notebooks ability to knit
              par(mfrow = c(2, 2))  # Set up a 2x2 grid for subplots
              
              for (variable in names(df_hate_train)) {
-               if (variable != "Anti_semitic_crimes") { 
+               if (variable != "Antisemitic_crimes") { 
                # Exclude the response variable
                  plot(df_hate_train[[variable]], residuals_all,
                       main = paste("Residuals vs", variable),
