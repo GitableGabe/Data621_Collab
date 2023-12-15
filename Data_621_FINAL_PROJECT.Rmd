@@ -1,5 +1,5 @@
 ---
-title: "DATA 621: BUSINESS ANALYTICS AND DATA MINING FINA PROJECT"
+title: "DATA 621: BUSINESS ANALYTICS AND DATA MINING FINAL PROJECT"
 date: "Last edited `r format(Sys.time(), '%B %d, %Y')`"
 author: "Group 2 - Gabriel Campos, Melissa Bowman, Alexander Khaykin, & Jennifer Abinette"
 output:
@@ -138,7 +138,7 @@ df_hate_train <- df_hate_corr[train_indices, ]
 df_hate_test <- df_hate_corr[-train_indices, ]
 ```
 
-```{r}
+```{r, echo=FALSE}
 rm(git_url,col,total_hate,train_indices,cnt_hate, add_freq)
 ```
 
@@ -181,14 +181,54 @@ ggcorr(df_hate_crime%>%
 
 (cor_matrix <- cor(df_hate_train))
 ```
+## Weighted Values Forgoed
+
+Our attempt to get the weighted values, hindered our R Notebooks ability to knit. A visual assessment of the plot displayed, indicated a 'fan-like' or 'cone-shaped' pattern was lacking, and therefore the attributes lacked the presence of heteroskedasticity. Ultimately the decision was made to not pursue the weighted values.
+
+             #```{r,fig.height=6,fig.width=6,fig.ncol=1,}
+             # Fit a linear regression model with all variables
+             lm_model <- lm(Anti_semitic_crimes ~ ., data = df_hate_train)
+             
+             # Extract residuals
+             residuals_all <- residuals(lm_model)
+             
+             # Plot residuals for each predictor variable
+             par(mfrow = c(2, 2))  # Set up a 2x2 grid for subplots
+             
+             for (variable in names(df_hate_train)) {
+               if (variable != "Anti_semitic_crimes") { 
+               # Exclude the response variable
+                 plot(df_hate_train[[variable]], residuals_all,
+                      main = paste("Residuals vs", variable),
+                      xlab = variable, ylab = "Residuals")
+               }
+             }
+             
+             # Reset the plotting parameters
+             par(mfrow = c(1, 1))
+             #```
+
+
+<div style="display: flex; flex-wrap: wrap; justify-content: space-around;">
+
+![Image 1](Images/img1.png){ width=45% }
+![Image 2](Images/img2.png){ width=45% }
+![Image 3](Images/img3.png){ width=45% }
+![Image 4](Images/img4.png){ width=45% }
+![Image 5](Images/img5.png){ width=45% }
+![Image 6](Images/img6.png){ width=45% }
+
+
+</div>
+
 
 ## Box-Cox Transformation
 
-```{r}
-# df_hate_train<-as.data.frame.matrix(df_hate_train)
-```
-
 ### df_hate_train
+
+```{r, echo=FALSE}
+df_hate_train<-as.data.frame.matrix(df_hate_train)
+```
 
 ```{r}
 # Convert a DataFrame column to a list
@@ -290,16 +330,27 @@ rm(bc,freq_list)
 
 
 ```{r}
-df_train_model <- cbind(df_hate_train,
+df_temp <- df_hate_train
+df_train_model <- cbind(df_temp,
                  as.data.frame(norm_bias_desc_freq),
                  as.data.frame(norm_data_year_freq),
                  as.data.frame(norm_ori_freq),
                  as.data.frame(norm_pug_agency_name_freq),
                  as.data.frame(norm_state_abbr_freq),
                  as.data.frame(norm_state_name_freq))
+
 ```
 
+```{r,echo=FALSE}
+rm(df_temp)
+```
+
+
 ### df_hate_test
+
+```{r, echo=FALSE}
+df_hate_train<-as.data.frame.matrix(df_hate_train)
+```
 
 ```{r}
 # Convert a DataFrame column to a list
@@ -401,7 +452,8 @@ rm(bc,freq_list)
 
 
 ```{r}
-df_test_model <- cbind(df_hate_test,
+df_temp <- df_hate_test
+df_test_model <- cbind(df_temp,
                  as.data.frame(norm_bias_desc_freq),
                  as.data.frame(norm_data_year_freq),
                  as.data.frame(norm_ori_freq),
@@ -409,4 +461,9 @@ df_test_model <- cbind(df_hate_test,
                  as.data.frame(norm_state_abbr_freq),
                  as.data.frame(norm_state_name_freq))
 ```
+
+```{r,echo=FALSE}
+rm(df_temp)
+```
+
 

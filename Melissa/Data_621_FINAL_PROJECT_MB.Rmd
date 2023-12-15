@@ -199,7 +199,7 @@ str(df_hate_train)
 
 #Checking to see if we need to weight anything
 #Checking to see if we need to weight anything
-```{r,fig.height=4,fig.width=4,fig.ncol=1,}
+# ```{r,fig.height=6,fig.width=6,fig.ncol=1,}
 # # Fit a linear regression model with all variables
 # lm_model <- lm(Anti_semitic_crimes ~ ., data = df_hate_train)
 # 
@@ -219,7 +219,7 @@ str(df_hate_train)
 # 
 # # Reset the plotting parameters
 # par(mfrow = c(1, 1))
-```
+# ```
 
 
 ```{r}
