@@ -133,6 +133,20 @@ df_hate_corr<-df_hate_corr%>%
   dplyr::select(matches("_freq"), matches("^Anti"))
 ```
 
+
+```{r, warning=FALSE}
+df_hate_corr %>%
+  scale() %>%
+  as.data.frame() %>%
+  stack() %>%
+  ggplot(aes(x = ind, y = values)) +
+  geom_boxplot() +
+  labs(title = 'Boxplot Training (scaled)',
+       x = 'Variables',
+       y = 'Normalized_Values')+
+  theme(axis.text.x=element_text(size=10, angle=90))
+```
+
 ## Train | Test data creation
 
 ```{r}
