@@ -1,0 +1,1078 @@
+---
+title: "DATA 621: BUSINESS ANALYTICS AND DATA MINING FINA PROJECT"
+date: "Last edited `r format(Sys.time(), '%B %d, %Y')`"
+author: "Group 2 - Gabriel Campos, Melissa Bowman, Alexander Khaykin, & Jennifer Abinette"
+output:
+  pdf_document:
+    latex_engine: xelatex
+  geometry: "left=0.5cm,right=0.5cm,top=1cm,bottom=2cm"
+  html_document:
+    df_print: paged
+urlcolor: blue
+---
+
+# SET UP
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+# cleaner set up and loading
+pacman::p_unload(pacman::p_loaded(), character.only = TRUE)
+rm(list = ls(all = TRUE))
+
+
+pacman::p_load(tidyverse, 
+               ggplot2,
+               GGally,
+               corrplot,
+               psych,
+               caret,
+               forcats,
+               car, 
+               kableExtra,
+               stargazer)
+```
+
+#### Load Data
+```{r data-import, echo=FALSE}
+git_url<-
+  "https://raw.githubusercontent.com/GitableGabe/Data621_Data/main/"
+
+```
+
+```{r, echo = FALSE}
+df_hate_crime <- 
+  read.csv(paste0(git_url,"hate_crime.csv"))
+head(df_hate_crime,n=3)
+```
+
+#### Summary data
+
+```{r, echo=FALSE, eval = FALSE}
+print(skim(df_hate_crime))
+```
+
+# DATA CLEANING - always clean prior to transformation!!!!!!! GIGO -- garbage in, garbage out!
+
+1. Trim dataset to the nonredundant variables
+
+```{r, echo=FALSE}
+## ORIGINAL
+# df_hate_crime <- df_hate_crime%>%
+#   dplyr::select(-c(adult_victim_count,juvenile_victim_count,adult_offender_count,juvenile_offender_count,total_individual_victims,incident_date))
+
+## Removing additional redundant and/or non-informative variables like incident_id, ori, division_name, state_name (because state_abbr is already in dataset); public agency name or unit is too granular to be of use also. population_group_description is redundant with the code
+df_hate_crime <- df_hate_crime%>%
+  dplyr::select(-c(adult_victim_count,juvenile_victim_count,adult_offender_count,juvenile_offender_count,total_individual_victims,incident_date, incident_id, ori, division_name, state_name, pug_agency_name, pub_agency_unit, population_group_description))
+```
+
+2. Create a binary target column
+```{r}
+df_hate_crime <- df_hate_crime %>%
+  mutate(Anti_semitic_crimes = ifelse(grepl("Anti-Jewish",
+                                     bias_desc, ignore.case = TRUE), 1, 0))
+# df_hate_crime <- df_hate_crime %>%
+#   mutate(Violent = ifelse(grepl("*Assault*|*Abduction*|*Rape*|*Kidnapping*|*Murder*",
+#                                      offense_name, ignore.case = TRUE), 1, 0))
+
+#REMOVE BIAS DESCRIPTION BECAUSE IT WAS USED TO MAKE THE OUTCOME VARIABLE
+df_hate_crime <- df_hate_crime %>% 
+  dplyr::select(-bias_desc, multiple_bias)
+# get counts
+
+cnt_hate <- sum(df_hate_crime$Anti_semitic == 1)
+total_hate<-nrow(df_hate_crime)
+
+cat("Number of Anti_semitic column reports in hatecrime.csv is:",
+    cnt_hate," out of ",total_hate,"\n")
+```
+
+
+3. Next, we will clean up `victim_types`, `offense_name` & `location_name` by splitting the columns containing multiple info (separated by ;) into dummy variables
+
+* `victim_types`:
+```{r, echo = FALSE}
+## Can't work here because the entries are not always in identical order; if the data were, it would work beautifully.
+# df_split <- df_hate_crime %>%
+    # separate(victim_types, into = paste0("col_", 1:3), sep = ";", extra = "merge")
+
+## See what I'm working with:
+# table(df_hate_crime$victim_types, useNA = "always")
+
+## Ideally, you wouldn't have to do it manually like this, but sometimes the data are messy enough it's harder to automate.
+df_hate_crime <- df_hate_crime %>%
+   mutate(victim_Business = ifelse(grepl("Business", victim_types, ignore.case = TRUE), 1, 0),
+          victim_Individual = ifelse(grepl("Individual", victim_types, ignore.case = TRUE), 1, 0),
+          victim_SocietyPublic = ifelse(grepl("Society/Public", victim_types, ignore.case = TRUE), 1, 0),
+          victim_Government = ifelse(grepl("Government", victim_types, ignore.case = TRUE), 1, 0),
+          victim_Religious = ifelse(grepl("Religious Organization", victim_types, ignore.case = TRUE), 1, 0),
+          victim_Police = ifelse(grepl("Law Enforcement Officer", victim_types, ignore.case = TRUE), 1, 0),
+          victim_Other = ifelse(grepl("Other", victim_types, ignore.case = TRUE), 1, 0)) %>% 
+  dplyr::select(-victim_types) ## Make sure you drop the original column!
+
+## Quick and dirty visualization to make sure we don't want to group these differently:
+# for(col in names(df_hate_crime[,17:23])) {
+#   print(col)
+#   tab <- table(df_hate_crime$Anti_semitic_crimes, df_hate_crime[,col])
+#   print(tab)
+#   barplot(tab,
+#           xlab = col,
+#           main = col, 
+#           col = c("darkgray", "gold"), 
+#           legend.text = c("Other Hate Crime", "Anti-Semitic Hate Crime"),
+#           names.arg = c("False", "True"))
+# }
+```
+
+* `location_name`:
+
+```{r, echo = FALSE}
+
+# table(df_hate_crime$location_name, useNA = "always")
+
+## There are a LOT more categories now; we may want to condense some of them meaningfully to reduce the variation/dimensionality of the dataset
+
+df_hate_crime <- df_hate_crime %>%
+   mutate(location_TransportationTerminal = ifelse(grepl("*Terminal*", location_name, ignore.case = TRUE), 1, 0),
+              ## airports, docks, wharfs, bus stations
+          location_EducationInstitution = ifelse(grepl("*College*|*School*|*Daycare*|*Community*", location_name, ignore.case = TRUE), 1, 0),
+              ## elementary, hs, college, daycare, community center
+          location_EntertainmentVenue = ifelse(grepl("*Casino*|*Arena*|*Amusement*", location_name, ignore.case = TRUE), 1, 0),
+          location_ResidenceHotel = ifelse(grepl("*Home*|*Hotel*", location_name, ignore.case = TRUE), 1, 0),
+          location_BarRestaurant = ifelse(grepl("*Bar*|*Restaurant*", location_name, ignore.case = TRUE), 1, 0),
+            # bars, pubs, restaurants, nightclubs
+          location_ShoppingBankATM = ifelse(grepl("*Mall*|*Department*|*Bank*|*ATM*|*Specialty*|*Liquor*|*Gas*|*Convenience*|*Grocery*", location_name, ignore.case = TRUE), 1, 0),
+          location_RoadSidewalkParking = ifelse(grepl("*Highway*|*Parking*", location_name, ignore.case = TRUE), 1, 0),
+          location_ParkWoodsBeachRestArea = ifelse(grepl("*Park*|*Woods*|*Beach*|Rest Area|*Camp*", location_name, ignore.case = TRUE), 1, 0),
+          # park, playground, woods, fields, beach, lake, rest areas, campgrounds
+          location_Medical = ifelse(grepl("Drug Store/Doctor's Office/Hospital", location_name, ignore.case = TRUE), 1, 0),
+          location_Jail = ifelse(grepl("Jail/Prison/Penitentiary/Corrections Facility", location_name, ignore.case = TRUE), 1, 0),
+          location_PublicBuilding = ifelse(grepl("Government/Public Building", location_name, ignore.case = TRUE), 1, 0),
+          location_Cyberspace = ifelse(grepl("Cyberspace", location_name, ignore.case = TRUE), 1, 0),
+          location_WorkLocation = ifelse(grepl("*Farm*|*Site*|*Commercial*", location_name, ignore.case = TRUE), 1, 0),
+          # industrial site, construction site, farm facilities, commercial office buildings
+          location_ReligiousBuilding = ifelse(grepl("*Church/Synagogue/Temple/Mosque", location_name, ignore.case = TRUE), 1, 0),
+          location_Other = ifelse(grepl("*Abandoned*|*Other*|*Rental*|*Military*|*Tribal*|*Auto*", location_name, ignore.case = TRUE), 1, 0)) %>% 
+  dplyr::select(-location_name) ## Make sure you drop the original column!
+
+
+## Checking that I caught everything:
+# temp <- df_hate_crime %>%
+#    mutate(location_name = ifelse(grepl("*Terminal*|*College*|*School*|*Daycare*|*Community*|*Casino*|*Arena*|*Amusement*|*Home|*Hotel*|*Bar*|*Restaurant*|*Mall*|*Department*|*Bank*|*ATM*|*Specialty*|*Liquor*|*Gas*|*Highway*|*Parking*|*Grocery*|*Gas*|*Park*|*Woods*|*Beach*|Rest Area|*Camp*|Drug Store/Doctor's Office/Hospital|Jail/Prison/Penitentiary/Corrections Facility|Government/Public Building|Cyberspace|*Farm*|*Site*|*Commercial*|*Church/Synagogue/Temple/Mosque|*Abandoned*|*Other*|*Rental*|*Military*|*Tribal*|*Convenience*|*Auto*", location_name, ignore.case = TRUE), "", location_name))
+# 
+# table(temp$location_name)
+
+
+# for(col in names(df_hate_crime[,24:37])) {
+#   print(col)
+#   tab <- table(df_hate_crime$Anti_semitic_crimes, df_hate_crime[,col])
+#   print(tab)
+#   barplot(tab,
+#           xlab = col,
+#           main = col, 
+#           col = c("darkgray", "gold"), 
+#           legend.text = c("Other Hate Crime", "Anti-Semitic Hate Crime"),
+#           names.arg = c("False", "True"))
+# }
+```
+**Here we had to condense a number of categories to reduce dimensionality of the data and prevent possible overfitting. To do this, we grouped categories into the following broad terms:**
+
+`location_TransportationTerminal` - airports, docks, wharfs, bus stations
+`location_EducationInstitution` - elementary schools, high schools, colleges, daycares, community centers
+`location_EntertainmentVenue` - casinos, arenas, fairs, amusement parks, stadiums
+`location_HomeHotel` - residential home or a hotel room
+`location_ShoppingBankATM` - malls, department stores, banks, ATMs, specialty stores, liquor stores, gas stations, convenience stores, grocery stores
+`location_RoadSidewalkParking` - highways, roadways, sidewalks, parking structures
+`location_ParkWoodsBeachRestArea` - parks, playgrounds, woods, beaches, lakes, rest areas, camps/campgrounds
+`location_Medical` - original term, "Drug Store/Doctor's Office/Hospital"
+`location_Jail` - original term, "Jail/Prison/Penitentiary/Corrections Facility"
+`location_PublicBuilding` - original term, "Government/Public Building"
+`location_Cyberspace` - original term, "Cyberspace"
+`location_WorkLocation` - industrial sites, construction sites, farm facilities, commercial office buildings
+`location_ReligiousBuilding` - original term, "Church/Synagogue/Temple/Mosque"
+`location_Other` - 
+* Abandoned/Condemned Structure 
+* Auto Dealership New/Used
+* Rental Storage Facility
+* Military Installation
+* Tribal Lands
+* Original label of _Other/Unknown_
+
+* `offense_name`:
+```{r}
+# table(df_hate_crime$offense_name, useNA = "always")
+
+## Might be best just to characterize broadly. 
+
+df_hate_crime <- df_hate_crime %>%
+   mutate(offense_TheftLarcenyFraud = ifelse(grepl("*Theft*|*Larceny*|*Fraud*|*Stolen*|*Robbery*|*Purse-snatching*|*Pocket-picking*|*Embezzlement*|*Hacking*|*Extortion*|*Confidence*|*Forgery*|*Impersonation*|*Shoplifting*|*Burglary*", offense_name, ignore.case = TRUE), 1, 0),
+          offense_SexualCrime = ifelse(grepl("*Rape*|*Sodomy*|*Fondling*|*Incest*|*Prostitution*|*Pornography*", offense_name, ignore.case = TRUE), 1, 0),
+          offense_Arson = ifelse(grepl("*Arson*", offense_name, ignore.case = TRUE), 1, 0),
+          offense_Assault = ifelse(grepl("*Assault*|*Weapon*", offense_name, ignore.case = TRUE), 1, 0),
+          ## numerous assault categories, weapon law violations
+          offense_Vandalism = ifelse(grepl("*Vandalism*", offense_name, ignore.case = TRUE), 1, 0),
+          offense_MurderManslaughter = ifelse(grepl("*Murder*|*Manslaughter*", offense_name, ignore.case = TRUE), 1, 0),
+          offense_AnimalCruelty = ifelse(grepl("Animal Cruelty", offense_name, ignore.case = TRUE), 1, 0),
+          offense_Intimidation = ifelse(grepl("*Intimidation*", offense_name, ignore.case = TRUE), 1, 0),
+          offense_Kidnapping = ifelse(grepl("*Kidnapping*|*Trafficking*", offense_name, ignore.case = TRUE), 1, 0),
+          offense_Other = ifelse(grepl("*Treason*|Not Specified|*Liquor*|*Gambling*|*Drug*|*Bribery*|*Betting*", offense_name, ignore.case = TRUE), 1, 0)) %>% 
+  dplyr::select(-offense_name) ## Make sure you drop the original column!
+
+# Otehr included
+# Treason
+
+
+# temp <- df_hate_crime %>%
+#   mutate(offense_name = ifelse(grepl("*Theft*|*Larceny*|*Fraud*|*Stolen*|*Rape*|*Sodomy*|*Treason*|*Assault*|*Robbery*|*Purse-snatching*|*Pocket-picking*|*Vandalism*|*Prostitution*|*Pornography*|*Murder*|*Manslaughter*|Not Specified|*Intimidation*|Animal Cruelty|*Kidnapping*|*Trafficking*|*Embezzlement*|*Hacking*|*Extortion*|*Confidence*|*Fondling*|*Incest*|*Liquor*|*Gambling*|*Forgery*|*Drug*|*Impersonation*|*Shoplifting*|*Burglary*|*Bribery*|*Betting*|*Weapon*|*Arson*", offense_name, ignore.case = TRUE), "", offense_name))
+# table(temp$offense_name)
+
+
+# for(col in names(df_hate_crime[,38:47])) {
+#   print(col)
+#   tab <- table(df_hate_crime$Anti_semitic_crimes, df_hate_crime[,col])
+#   print(tab)
+#   barplot(tab,
+#           xlab = col,
+#           main = col, 
+#           col = c("darkgray", "gold"), 
+#           legend.text = c("Other Hate Crime", "Anti-Semitic Hate Crime"),
+#           names.arg = c("False", "True"))
+# }
+
+
+```
+
+GO BACK AND DESCRIBE
+
+4. Further, the population grouping for [metropolitan areas](https://ucr.fbi.gov/crime-in-the-u.s/2018/crime-in-the-u.s.-2018/topic-pages/area-definitions) needed to be condensed into something more meaning.
+```{r, echo = FALSE}
+
+df_hate_crime <- df_hate_crime %>% 
+  mutate(population_description = case_when(
+            population_group_code == '1A' ~ '250,000+',
+            population_group_code == '1B' ~ '250,000+',
+            population_group_code == '1C' ~ '250,000+',
+            population_group_code == '2' ~  '100,000+',
+            population_group_code == '3' ~  '<100,000',
+            population_group_code == '4' ~  '<100,000',
+            population_group_code == '5' ~  '<100,000',
+            population_group_code == '6' ~  '<100,000',
+            population_group_code == '7' ~  '<100,000',
+            population_group_code == '0' ~  'Other',
+            population_group_code == '8A' ~  '100,000+',
+            population_group_code == '8B' ~  '<100,000',
+            population_group_code == '8C' ~  '<100,000',
+            population_group_code == '8D' ~  '<100,000',
+            population_group_code == '8E' ~  'Other',
+            population_group_code == '9A' ~  '100,000+',
+            population_group_code == '9B' ~  '<100,000',
+            population_group_code == '9C' ~  '<100,000',
+            population_group_code == '9D' ~  '<100,000',
+            population_group_code == '9E' ~  'Other')) %>% 
+  mutate(population_description = ifelse(is.na(population_description), '1,000,000+', population_description)) %>%   select(-population_group_code)    ## drop the original
+  
+# table(df_hate_crime$population_description, useNA = "always")
+
+
+```
+
+5. Tidy __Offender Race:__ Group into the four largest categories: `White`, `Black`, `Asian` & `Other`. Make the truly missing/unknown as missing or unknown rather than `Other`
+```{r}
+# table(df_hate_crime$offender_race, useNA = "always")
+
+df_hate_crime <- df_hate_crime %>% 
+  mutate(offender_race = case_when(offender_race == 'American Indian or Alaska Native' ~ 'Other',
+                                   offender_race == 'Black or African American' ~ 'Black',
+                                   offender_race == 'Asian' ~ 'Asian',
+                                   offender_race == 'Multiple' ~ 'Other',
+                                   offender_race == 'Native Hawaiian or Other Pacific Islander' ~ 'Other',
+                                   offender_race == 'Unknown' ~ NA,
+                                   offender_race == 'Not Specified' ~ NA,
+                                   offender_race == 'White' ~ 'White'))
+
+table(df_hate_crime$offender_race, useNA = "always")
+
+```
+
+6. Tidy __Offender Ethnicity:__ Group into the three largest categories: `Latino`, `Non-Latino`, & `Other`. Make the truly missing/unknown as missing or unknown rather than `Other`
+```{r}
+# table(df_hate_crime$offender_ethnicity, useNA = "always")
+
+df_hate_crime <- df_hate_crime %>% 
+  mutate(offender_ethnicity = case_when(offender_ethnicity == 'Hispanic or Latino' ~ 'Latino',
+                                   offender_ethnicity == 'Not Hispanic or Latino' ~ 'Non-Latino',
+                                   offender_ethnicity == 'Multiple' ~ 'Other',
+                                   offender_ethnicity == 'Unknown' ~ NA,
+                                   offender_ethnicity == 'Not Specified' ~ NA))
+
+table(df_hate_crime$offender_ethnicity, useNA = "always")
+
+```
+
+
+# EDA -- Usually best to do your EDA on your untransformed data.
+
+### Have Anti-Semitic Crimes Varied by Year?
+```{r}
+df_hate_crime %>% 
+  select(data_year, Anti_semitic_crimes) %>% 
+  group_by(data_year) %>% 
+  summarize(Proportion = mean(Anti_semitic_crimes), SE = sd(Anti_semitic_crimes)/sqrt(n())) %>% 
+  ggplot(aes(x = as.factor(data_year), y = Proportion)) +
+    geom_path(group = 1, color = "cadetblue") +
+    geom_point(col = "cadetblue", size = 3) + 
+    geom_errorbar(aes(ymin = Proportion - SE, ymax = Proportion + SE), width = 0) + 
+    theme_bw() + 
+    labs(x = "Year",
+         y = "Proportion of All Hate Crimes",
+         title = "Proportion of all Hate Crimes Designated Anti-Semitic",
+         subtitle = "1991 - 2022") + 
+   theme(axis.text.x=element_text(angle = -90, hjust = 0))
+```
+
+### Any trends of Anti-Semitic Hate Crimes Across the Location, Offense, or Victim Type Features?
+```{r}
+df_hate_crime %>%
+  select_if(is.numeric) %>% 
+  select(-data_year, -victim_count, -total_offender_count) %>%       ## visualized separately
+  group_by(Anti_semitic_crimes) %>% 
+  summarise_all(mean) %>% 
+  gather(-Anti_semitic_crimes, key = "Variable", value = "Value") %>% 
+  ggplot(aes(x = as.factor(Anti_semitic_crimes), y = Value, fill = as.factor(Anti_semitic_crimes))) +
+    geom_col(position = "dodge") + 
+    labs(title = "Proportion of Hate Crimes Across Various Features",
+        x = "",
+        y = "Proportion of Hate Crimes",
+        fill = "Anti-semitic Hate Crime") +
+  scale_fill_manual(values = c("cadetblue", "gold"), labels = c("True", "False")) + 
+  theme_bw() +
+  theme(legend.position = "bottom",
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank()) + 
+  facet_wrap(~Variable)   ## Removed the free_y scale so we can better see where the gold bar is higher than the blue.
+```
+
+
+#### Any differences in the numbers of victims and/or offenders?
+```{r}
+df_hate_crime %>%
+  select_if(is.numeric) %>% 
+  select(Anti_semitic_crimes, victim_count, total_offender_count) %>%       ## visualized separately
+  group_by(Anti_semitic_crimes) %>% 
+  summarise_all(mean) %>% 
+  gather(-Anti_semitic_crimes, key = "Variable", value = "Value") %>% 
+  ggplot(aes(x = as.factor(Anti_semitic_crimes), y = Value, fill = as.factor(Anti_semitic_crimes))) +
+    geom_col(position = "dodge") + 
+    labs(title = "Mean Numbers of Offenders & Victims by Type of Hate Crime",
+        x = "",
+        y = "Mean Value",
+        fill = "Anti-semitic Hate Crime") +
+  scale_fill_manual(values = c("cadetblue", "gold"), labels = c("True", "False")) + 
+  theme_bw() +
+  theme(legend.position = "bottom",
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank()) + 
+  facet_wrap(~Variable)   ## Removed the free_y scale so we can better see where the gold bar is higher than the blue.
+```
+
+#### Visualizing the remaining categorical columns
+
+1. Reporting agency type:
+```{r}
+catData <- df_hate_crime %>%
+  select_if(is.character) %>% 
+  cbind(df_hate_crime$Anti_semitic_crimes) %>% 
+  rename(Anti_semitic_crimes = `df_hate_crime$Anti_semitic_crimes`)
+
+catData %>% 
+  group_by(agency_type_name) %>% 
+  summarise(Proportion = mean(Anti_semitic_crimes)) %>% 
+  ggplot(aes(y = Proportion, x = fct_reorder(agency_type_name, Proportion))) +
+    geom_col(position = "dodge", fill = "gold", color = "cadetblue") + 
+    labs(title = "Reporting Agency Type",
+        x = "",
+        y = "Proportion of All Hate Crimes Identified as Anti-Semitic") + 
+  coord_flip() + 
+  theme_bw()
+```
+**Anti-Semitic Hate Crimes are most often reported by Other State Agencies, followed closely by University and College Campuses.**
+
+2. By region
+```{r}
+catData %>% 
+  group_by(region_name) %>% 
+  summarise(Proportion = mean(Anti_semitic_crimes)) %>% 
+  ggplot(aes(y = Proportion, x = fct_reorder(region_name, Proportion))) +
+    geom_col(position = "dodge", fill = "gold", color = "cadetblue") + 
+    labs(title = "U.S. Region",
+        x = "",
+        y = "Proportion of All Hate Crimes Identified as Anti-Semitic") + 
+  coord_flip() + 
+  theme_bw()
+```
+**Anti-semitic hate crimes occur most frequently in the NE United States**
+
+3. By state
+```{r, fig.height=6}
+catData %>% 
+  group_by(state_abbr) %>% 
+  summarise(Proportion = mean(Anti_semitic_crimes)) %>% 
+  ggplot(aes(y = Proportion, x = fct_reorder(state_abbr, Proportion))) +
+    geom_col(position = "dodge", fill = "gold", color = "cadetblue") + 
+    labs(title = "U.S. State",
+        x = "",
+        y = "Proportion of All Hate Crimes Identified as Anti-Semitic") + 
+  coord_flip() + 
+  theme_bw()
+```
+**The highest proportion of Anti-Semitic hate crimes occur in NY, followed by NJ and NH.**
+
+###### Note well: Because of the correlation between state identity and region, state will not be fitted in the model.
+```{r}
+ df_hate_crime <- df_hate_crime %>% 
+  select(-state_abbr)
+```
+
+
+4. Population Size Where Crime Occurred 
+```{r}
+catData %>% 
+  group_by(population_description) %>% 
+  summarise(Proportion = mean(Anti_semitic_crimes)) %>% 
+  ggplot(aes(y = Proportion, x = fct_reorder(population_description, Proportion))) +
+    geom_col(position = "dodge", fill = "gold", color = "cadetblue") + 
+    labs(title = "Population Size Where Crime Occurred",
+        x = "",
+        y = "Proportion of All Hate Crimes Identified as Anti-Semitic") + 
+  coord_flip() + 
+  theme_bw()
+```
+**Anti-semitic hate crimes have highest frequency in larger-sized cities over 100,000 but not over 1 million** 
+
+5. Offender Race
+```{r}
+catData %>% 
+  group_by(offender_race) %>% 
+  summarise(Proportion = mean(Anti_semitic_crimes)) %>% 
+  filter(!is.na(offender_race)) %>% 
+  ggplot(aes(y = Proportion, x = fct_reorder(offender_race, Proportion))) +
+    geom_col(position = "dodge", fill = "gold", color = "cadetblue") + 
+    labs(title = "Race of Offender",
+        x = "",
+        y = "Proportion of All Hate Crimes Identified as Anti-Semitic") + 
+  coord_flip() + 
+  theme_bw()
+```
+**Only marginal differences in the proportion of Anti-Semitic crimes by offender race (~0.02 or 2% differences across categories)**
+
+6. Offender Ethnicity
+```{r}
+catData %>% 
+  group_by(offender_ethnicity) %>% 
+  summarise(Proportion = mean(Anti_semitic_crimes)) %>% 
+  filter(!is.na(offender_ethnicity)) %>% 
+  ggplot(aes(y = Proportion, x = fct_reorder(offender_ethnicity, Proportion))) +
+    geom_col(position = "dodge", fill = "gold", color = "cadetblue") + 
+    labs(title = "Ethnicity of Offender",
+        x = "",
+        y = "Proportion of All Hate Crimes Identified as Anti-Semitic") + 
+  coord_flip() + 
+  theme_bw()
+```
+**Also marginal differences in the proportion of Anti-Semitic crimes by offender ethnicity (~0.01 or 1% differences across categories)**
+
+7. Multiple Offenses Committed
+```{r}
+catData %>% 
+  group_by(multiple_offense) %>% 
+  summarise(Proportion = mean(Anti_semitic_crimes)) %>% 
+  filter(!is.na(multiple_offense)) %>% 
+  ggplot(aes(y = Proportion, x = fct_reorder(multiple_offense, Proportion))) +
+    geom_col(position = "dodge", fill = "gold", color = "cadetblue") + 
+    labs(title = "Number of Offenses Committed Simultaneously",
+        x = "",
+        y = "Proportion of All Hate Crimes Identified as Anti-Semitic") + 
+  coord_flip() + 
+  theme_bw()
+```
+**About 5% more Anti-semitic hate crimes occur as the solitary offense.**
+
+8. Multiple Bias Committed
+```{r}
+names(catData)
+
+
+catData %>% 
+  group_by(multiple_bias) %>% 
+  summarise(Proportion = mean(Anti_semitic_crimes)) %>% 
+  filter(!is.na(multiple_bias)) %>% 
+  ggplot(aes(y = Proportion, x = fct_reorder(multiple_bias, Proportion))) +
+    geom_col(position = "dodge", fill = "gold", color = "cadetblue") + 
+    labs(title = "Multiple Bias (Multiple Groups Targeted Simultaneously)",
+        x = "",
+        y = "Proportion of All Hate Crimes Identified as Anti-Semitic") + 
+  coord_flip() + 
+  theme_bw()
+```
+**About 20% more of Anti-Semitic Crimes occur as part of a multiple bias offense (more than one group targeted at a time)**
+
+
+# Data Transformation - ORIGINAL
+
+## Changing Categorical Values to Numeric 
+
+**Categorical values are transformed using there[sic] frequency counts**
+
+## Before one does frequency encoding, you should ensure that you do not have the same number of counts for any of the categories (otherwise, you'll lose valuable information because they will get encoded as the same value) -- I added a print statement to your original code, and you are losing value information for columns such as victim_types, location_name, offense_name. This is what alerted me to the fact that your cleaning was very incomplete.
+
+**The box-Cox transformation is used for the dependent (response) variable in regression, and with logistic regression the response is binary, and thus transforming a binary variable makes no sense.**
+
+**Applying something LIKE a box-Cox transformation for predictors is known as a box-Tidwell transform, although using splines is generally thought to be a better idea. Who taught you to do box-Cox transformation on predictors??**
+
+**Frequency encoding is fine, although this isn't necessary if the bulk of your predictors have already been encoded into dummies (one hot encoding); weighted evidence is optimal encoding for logistic regression. If most of the categorical are already one hot encoded, maybe it would make more sense to just do that. Plus, you get the advantage of being able to preserve some readily-interpretable meaning to the analysis (i.e., a single column for each of the predictor variables -- so if I want to quickly contrast, say, NY and AL, I can)**
+
+**Other problems with your frequeny encoding:** 
+1. you encoded the outcome variable and then left it in the dataframe
+2. You left the untransformed, but encoded, variables in the dataframe
+
+```{r, eval = F}
+df_hate_corr <- df_hate_crime
+# frequency_map <- table(df_hate_crime$incident_id)
+# df_hate_crime$incident_id_freq <- frequency_map[df_hate_crime$incident_id]
+
+add_freq <- function(data, column_name) {
+  # Compute frequencies, including NAs
+  frequency_map <- table(data[[column_name]], useNA = "always")
+  print(column_name)
+  print(frequency_map)
+  
+  # Create a new column with frequency encoding (including NAs)
+  new_col_name <- paste0(column_name, "_freq")
+  data[[new_col_name]] <- frequency_map[match(data[[column_name]], names(frequency_map))]
+  
+  return(data)
+}
+
+# Loop through all columns and add frequency encoding columns (including NAs)
+for (col in names(df_hate_corr)) {
+  df_hate_corr <- add_freq(df_hate_corr, col)
+}
+
+
+```
+
+```{r, eval = F}
+# selecting only numeric columns
+df_hate_corr<-df_hate_corr%>%
+  dplyr::select(matches("_freq"), matches("^Anti"))
+```
+
+
+# KG: Do not transform the predictor variables with Box-Cox.
+## Box-Cox Transformation
+
+```{r, eval = F}
+# df_hate_train<-as.data.frame.matrix(df_hate_train)
+```
+
+### df_hate_train
+
+```{r, eval = F}
+# Convert a DataFrame column to a list
+freq_list <- as.numeric(as.list(df_hate_train$data_year_freq))
+
+#find optimal lambda for Box-Cox transformation 
+bc <- boxcox(freq_list~ 1, lambda = seq(-2,2,0.1))
+lambda_data_year <- bc$x[which.max(bc$y)]
+
+# Apply the Box-Cox transformation
+norm_data_year_freq <- (freq_list^lambda_data_year-1)/lambda_data_year
+
+rm(bc,freq_list)
+# hist(data_year_freq_norm )
+# hist(df_hate_train$data_year_freq)
+```
+
+```{r, eval = FALSE}
+# Convert a DataFrame column to a list
+freq_list <- as.numeric(as.list(df_hate_train$ori_freq))
+
+#find optimal lambda for Box-Cox transformation 
+bc <- boxcox(freq_list~ 1, lambda = seq(-2,2,0.1))
+lambda_ori <- bc$x[which.max(bc$y)]
+
+# Apply the Box-Cox transformation
+norm_ori_freq <- (freq_list^lambda_ori-1)/lambda_ori
+
+rm(bc,freq_list)
+# hist(data_year_freq_norm )
+# hist(df_hate_train$data_year_freq)
+```
+
+```{r, eval = F}
+# Convert a DataFrame column to a list
+freq_list <- as.numeric(as.list(df_hate_train$pug_agency_name_freq))
+
+#find optimal lambda for Box-Cox transformation 
+bc <- boxcox(freq_list~ 1, lambda = seq(-2,2,0.1))
+lambda_pug_agency_name <- bc$x[which.max(bc$y)]
+
+# Apply the Box-Cox transformation
+norm_pug_agency_name_freq <- (freq_list^lambda_pug_agency_name-1)/lambda_pug_agency_name
+
+rm(bc,freq_list)
+# hist(data_year_freq_norm )
+# hist(df_hate_train$pug_agency_name_freq)
+```
+
+```{r, eval = F}
+# Convert a DataFrame column to a list
+freq_list <- as.numeric(as.list(df_hate_train$state_abbr_freq))
+
+#find optimal lambda for Box-Cox transformation 
+bc <- boxcox(freq_list~ 1, lambda = seq(-2,2,0.1))
+lambda_state_abbr <- bc$x[which.max(bc$y)]
+
+# Apply the Box-Cox transformation
+norm_state_abbr_freq <- (freq_list^lambda_state_abbr-1)/lambda_state_abbr
+
+rm(bc,freq_list)
+# hist(data_year_freq_norm )
+# hist(df_hate_train$state_abbr_freq)
+```
+
+```{r, eval = F}
+# Convert a DataFrame column to a list
+freq_list <- as.numeric(as.list(df_hate_train$state_name_freq))
+
+#find optimal lambda for Box-Cox transformation 
+bc <- boxcox(freq_list~ 1, lambda = seq(-2,2,0.1))
+lambda_state_name <- bc$x[which.max(bc$y)]
+
+# Apply the Box-Cox transformation
+norm_state_name_freq <- (freq_list^lambda_state_name-1)/lambda_state_name
+
+rm(bc,freq_list)
+# hist(data_year_freq_norm )
+# hist(df_hate_train$state_name_freq)
+```
+
+```{r, eval=FALSE}
+# Convert a DataFrame column to a list
+freq_list <- as.numeric(as.list(df_hate_train$bias_desc_freq))
+
+#find optimal lambda for Box-Cox transformation 
+bc <- boxcox(freq_list~ 1, lambda = seq(-2,2,0.1))
+lambda_bias_desc <- bc$x[which.max(bc$y)]
+
+# Apply the Box-Cox transformation
+norm_bias_desc_freq <- (freq_list^lambda_bias_desc-1)/lambda_bias_desc
+
+rm(bc,freq_list)
+# hist(data_year_freq_norm )
+# hist(df_hate_train$bias_desc_freq)
+```
+
+```{r, eval = F}
+df_hate_train <- df_hate_train %>% 
+  dplyr::select(-c(data_year_freq, pug_agency_name_freq, state_abbr_freq, Anti_semitic_crimes_freq, population_group_code_freq))
+
+df_train_model <- cbind(df_hate_train,
+                 as.data.frame(norm_data_year_freq),
+                 as.data.frame(norm_pug_agency_name_freq),
+                 as.data.frame(norm_state_abbr_freq))
+```
+
+### df_hate_test
+
+```{r, eval = F}
+# Convert a DataFrame column to a list
+freq_list <- as.numeric(as.list(df_hate_test$data_year_freq))
+
+#find optimal lambda for Box-Cox transformation 
+bc <- boxcox(freq_list~ 1, lambda = seq(-2,2,0.1))
+lambda_data_year <- bc$x[which.max(bc$y)]
+
+# Apply the Box-Cox transformation
+norm_data_year_freq <- (freq_list^lambda_data_year-1)/lambda_data_year
+
+rm(bc,freq_list)
+# hist(data_year_freq_norm )
+# hist(df_hate_test$data_year_freq)
+```
+
+```{r, eval = F}
+# Convert a DataFrame column to a list
+freq_list <- as.numeric(as.list(df_hate_test$ori_freq))
+
+#find optimal lambda for Box-Cox transformation 
+bc <- boxcox(freq_list~ 1, lambda = seq(-2,2,0.1))
+lambda_ori <- bc$x[which.max(bc$y)]
+
+# Apply the Box-Cox transformation
+norm_ori_freq <- (freq_list^lambda_ori-1)/lambda_ori
+
+rm(bc,freq_list)
+# hist(data_year_freq_norm )
+# hist(df_hate_test$data_year_freq)
+```
+
+```{r, eval = F}
+# Convert a DataFrame column to a list
+freq_list <- as.numeric(as.list(df_hate_test$pug_agency_name_freq))
+
+#find optimal lambda for Box-Cox transformation 
+bc <- boxcox(freq_list~ 1, lambda = seq(-2,2,0.1))
+lambda_pug_agency_name <- bc$x[which.max(bc$y)]
+
+# Apply the Box-Cox transformation
+norm_pug_agency_name_freq <- (freq_list^lambda_pug_agency_name-1)/lambda_pug_agency_name
+
+rm(bc,freq_list)
+# hist(data_year_freq_norm )
+# hist(df_hate_test$pug_agency_name_freq)
+```
+
+```{r, eval = F}
+# Convert a DataFrame column to a list
+freq_list <- as.numeric(as.list(df_hate_test$state_abbr_freq))
+
+#find optimal lambda for Box-Cox transformation 
+bc <- boxcox(freq_list~ 1, lambda = seq(-2,2,0.1))
+lambda_state_abbr <- bc$x[which.max(bc$y)]
+
+# Apply the Box-Cox transformation
+norm_state_abbr_freq <- (freq_list^lambda_state_abbr-1)/lambda_state_abbr
+
+rm(bc,freq_list)
+# hist(data_year_freq_norm )
+# hist(df_hate_test$state_abbr_freq)
+```
+
+```{r, eval = F}
+# Convert a DataFrame column to a list
+freq_list <- as.numeric(as.list(df_hate_test$state_name_freq))
+
+#find optimal lambda for Box-Cox transformation 
+bc <- boxcox(freq_list~ 1, lambda = seq(-2,2,0.1))
+lambda_state_name <- bc$x[which.max(bc$y)]
+
+# Apply the Box-Cox transformation
+norm_state_name_freq <- (freq_list^lambda_state_name-1)/lambda_state_name
+
+rm(bc,freq_list)
+# hist(data_year_freq_norm )
+# hist(df_hate_test$state_name_freq)
+```
+
+```{r, eval = F}
+# Convert a DataFrame column to a list
+freq_list <- as.numeric(as.list(df_hate_test$bias_desc_freq))
+
+#find optimal lambda for Box-Cox transformation 
+bc <- boxcox(freq_list~ 1, lambda = seq(-2,2,0.1))
+lambda_bias_desc <- bc$x[which.max(bc$y)]
+
+# Apply the Box-Cox transformation
+norm_bias_desc_freq <- (freq_list^lambda_bias_desc-1)/lambda_bias_desc
+
+rm(bc,freq_list)
+# hist(data_year_freq_norm )
+# hist(df_hate_test$bias_desc_freq)
+```
+
+**You make the same mistake with test that you did with train**
+```{r, eval = F}
+df_test_model <- cbind(df_hate_test,
+                 as.data.frame(norm_bias_desc_freq),
+                 as.data.frame(norm_data_year_freq),
+                 as.data.frame(norm_ori_freq),
+                 as.data.frame(norm_pug_agency_name_freq),
+                 as.data.frame(norm_state_abbr_freq),
+                 as.data.frame(norm_state_name_freq))
+```
+
+
+# DATA TRANSFORMATION - NEW
+
+### Frequency Encoding
+Perform frequency encoding on the categorical variables. One hot encoding (dummy encoding) was already done on variables for which frequency cannot be performed because each observation can have multiple conditions. E.g., a hate crime could be both an assault and a theft.
+
+```{r, eval = T, echo = F}
+## Using your code, you are frequency encoding the target. Drop it before encoding.
+cols2drop <- c("Anti_semitic_crimes", 
+               "total_offender_count", 
+               "victim_count", 
+               "victim_Business",
+               "victim_Individual",
+               "victim_SocietyPublic",
+               "victim_Government",
+               "victim_Religious",
+               "victim_Police",
+               "victim_Other",
+               "location_TransportationTerminal",
+               "location_EducationInstitution",
+               "location_EntertainmentVenue", 
+               "location_ResidenceHotel",
+               "location_BarRestaurant",
+               "location_ShoppingBankATM",
+               "location_RoadSidewalkParking",
+               "location_ParkWoodsBeachRestArea",
+               "location_Medical",
+               "location_Jail",
+               "location_PublicBuilding",
+               "location_Cyberspace",
+               "location_WorkLocation",
+               "location_ReligiousBuilding",
+               "location_Other",
+               "offense_TheftLarcenyFraud",
+               "offense_SexualCrime",
+               "offense_Arson",
+               "offense_Assault",
+               "offense_Vandalism",
+               "offense_MurderManslaughter",
+               "offense_AnimalCruelty",
+               "offense_Intimidation",
+               "offense_Kidnapping",
+               "offense_Other")
+
+df_hate_corr <- df_hate_crime[, !names(df_hate_crime) %in% cols2drop]
+
+
+## This is fine, does what it should. 
+add_freq <- function(data, column_name) {
+  # Compute frequencies, including NAs
+  frequency_map <- table(data[[column_name]], useNA = "always")
+  # print(column_name)
+  # print(frequency_map)
+  
+  # Create a new column with frequency encoding (including NAs)
+  # new_col_name <- paste0(column_name, "_freq")    ## Wouldn't bother. Just replace.
+  # data[[new_col_name]] <- frequency_map[match(data[[column_name]], names(frequency_map))]
+  data[[column_name]] <- frequency_map[match(data[[column_name]], names(frequency_map))]
+
+  return(data)
+}
+
+# Loop through all columns and add frequency encoding columns (including NAs) -- Fine, does as it should.
+for (col in names(df_hate_corr)) {
+  df_hate_corr <- add_freq(df_hate_corr, col)
+}
+
+## Now, stitch the target back on to make a finished df:
+df_hate_corr <- df_hate_corr %>% 
+  cbind(df_hate_crime[, names(df_hate_crime) %in% cols2drop])
+
+  # rename(Anti_semitic_crimes = `df_hate_crime$Anti_semitic_crimes`)
+
+# names(df_hate_corr)
+```
+
+```{r, eval = T}
+ggcorr(df_hate_corr)
+```
+
+### After Frequency Encoding, what variables have the highest correlation with the Target variable?**
+```{r, eval = T, echo = F}
+corrMat <- cor(df_hate_corr)
+correlation <- data.frame(corrMat[,43])
+names(correlation) <- "Correlation with Target"
+correlation %>% 
+  arrange(desc(`Correlation with Target`)) %>% 
+  filter(`Correlation with Target` < 1) %>%     ## Don't show correlation with itself
+  kableExtra::kable()
+```
+
+
+# TRAINING THE MODEL
+### Data Partitioning
+```{r, echo = F}
+set.seed(123)
+options(scipen = 999)
+
+train_indices <- sample(seq_len(nrow(df_hate_corr)), 0.8 * nrow(df_hate_corr))
+## When you have so few data points, it can be a good idea to use the data partition function in caret instead
+
+# Create training dataset
+df_hate_train <- df_hate_corr[train_indices, ]
+
+# Create test dataset
+df_hate_test <- df_hate_corr[train_indices, ]
+```
+
+###Full Model
+```{r}
+mod <- glm(Anti_semitic_crimes~., df_hate_train, family = binomial)
+# summary(mod)
+# AIC(mod)
+```
+**Model no longer so grossly overfitted that it is having convergence issues, as with the prior inception of the frequency encoding / cleanup. However, the best way to ensure no overfitting is through k-fold CV of the model.**
+
+### 10-fold Cross Validation:
+Specify type of training method used and 10 folds
+```{r}
+trainCV <- trainControl(method="cv", 
+                          number=10, 
+                          savePredictions="all",
+                          classProbs=TRUE)
+```
+
+Now, use that CV to properly fit the model:
+```{r}
+## Turn Anti-Semitic_crimes into a factor
+df_hate_train2 <- df_hate_train
+
+# Re-label values of outcome variable for train_df as factor for the CV
+df_hate_train2$Anti_semitic_crimes[df_hate_train2$Anti_semitic_crimes==1] <- "AntiSemitic"
+df_hate_train2$Anti_semitic_crimes[df_hate_train2$Anti_semitic_crimes==0] <- "Other"
+
+# table(df_hate_train2$Anti_semitic_crimes, useNA = "always")
+
+# Specify logistic regression model to be estimated using training data and k-fold cross-validation process
+mod2 <- train(Anti_semitic_crimes ~., 
+              data = df_hate_train2,
+              method="glm", 
+              family=binomial, 
+              trControl=trainCV)
+
+# Print information about model
+print(mod2)
+```
+**Accuracy is good at 87.8% but Cohen's Kappa is only fair at 16.2%, which suggests that there may be collinearity or other issues yet with the model.**
+
+```{r, fig.height=6}
+important <- data.frame(varImp(mod2)$importance)
+
+ggplot(important, aes(y = Overall, x = fct_reorder(rownames(important), Overall))) +
+  geom_col(color = "cadetblue", fill = "gold") +
+  coord_flip() +
+  labs(x = "Features",
+       y = "Overall Importance in Model (%)",
+       title = "Feature Importance")+
+  theme_bw()
+```
+
+```{r}
+# summary(mod2)
+```
+
+### Per the summary and the feature importance, dropping:
+* Victim count
+* Religious victims 
+* Transportation Terminal location 
+* Entertainment Venue location
+* Residence/Hotel location
+* Larceny/Theft
+* Assault
+* Murder/Manslaughter
+* Animal Cruelty
+* Kidnapping
+* Other offenses
+
+```{r}
+mod3 <- glm(Anti_semitic_crimes~.-victim_count-victim_Religious-location_TransportationTerminal-location_EntertainmentVenue-location_ResidenceHotel-offense_TheftLarcenyFraud-offense_Assault-offense_MurderManslaughter-offense_AnimalCruelty-offense_Kidnapping-offense_Other, data = df_hate_train, family = binomial)
+
+# summary(mod3)
+```
+
+### Variance Inflation Factors (Multicollinearity)
+```{r}
+VIF <- data.frame(vif(mod3))
+VIF <- VIF %>% 
+  rename(VIF = vif.mod3.) %>% 
+  arrange(desc(VIF))
+kable(VIF)
+```
+**Any collinearity has now also been resolved by the removal of the unimportant features. All VIF under 5; most concerning would be** `victim_Individual` **but removal of that term does not improve accuracy or AIC in later tests (not shown) so retaining it in the model.**
+
+### Final Model Metrics
+```{r}
+# Specify logistic regression model to be estimated using training data and k-fold cross-validation process
+mod4 <- train(Anti_semitic_crimes~. -victim_count-victim_Religious-location_TransportationTerminal-location_EntertainmentVenue-location_ResidenceHotel-offense_TheftLarcenyFraud-offense_Assault-offense_MurderManslaughter-offense_AnimalCruelty-offense_Kidnapping-offense_Other, 
+              data = df_hate_train2,
+              method="glm", 
+              family=binomial, 
+              trControl=trainCV)
+
+# Print information about model
+print(mod4)
+```
+**Removal of the terms did not alter Accuracy or Kappa.**
+
+```{r}
+stargazer(mod, mod3, title="Model 3", type = "text")
+```
+**AIC ticks up slightly with the removal of the terms, but barely considering we dropped 10 terms.**
+
+Many of the constants are effectively zero, and are likely not very strong predictors. Stand outs include:
+* Police Victims - there are 213% lower odds that the victim will be a police officer if it's Anti-Semitic Hate Crime vs. Other Hate Crime
+* Intimidation - there are 100% higher odds that the victim will be Intimidated if it's Anti-Semitic Hate Crime vs. Other Hate Crime
+* Vandalism - there are nearly 150% higher odds that the victim will be Vandalized if it's Anti-Semitic Hate Crime vs. Other Hate Crime
+* Business & Public Victims - there are 33% and 44% higher odds, respectively, that the victim will be a victim in a Business or in Public if it's Anti-Semitic Hate Crime vs. Other Hate Crime
+* Arson - there is nearly 75% higher odds that the victim will be subjected to Arson if it's Anti-Semitic Hate Crime vs. Other Hate Crime
+* Cyberspace - there are 100% higher odds that the victim will be attacked in Cyberspace if it's Anti-Semitic Hate Crime vs. Other Hate Crime
+
+
+# TESTING THE MODEL
+
+### Predictions and Confusion Matrix
+```{r}
+## Mod3 and mod4 were identical; mod3 is the logit regression object, and can be used for predictions, etc.
+df_hate_test$predicted_probs <- predict(mod3, newdata = df_hate_test, type = "response")
+df_hate_test$predicted_crime <- ifelse(df_hate_test$predicted_probs > 0.5, 1, 0)
+
+confusionMatrix(data=as.factor(df_hate_test$predicted_crime), 
+                reference = as.factor(df_hate_test$Anti_semitic_crimes),
+                positive = "1")
+```
+**Several Notes**
+* Accuracy for the test model is identical to that of the training model, 0.8777
+* Kappa is similarly fair, 0.164
+* McNemar's Test is significant; thus, the classifiers have different error rates. This can be because we didn't start out with closer to 1:1 ratio of the classifiers, though. This isn't surprising.
+* Specificity is very high but sensitivity is very poor. Positive predictive value suggests that it's hard to identify an Anti-Semitic hate crime in the noise of the data. 
+
+
+# CHECKING MODEL ASSUMPTIONS
+We have already verified that the final model has no substantial multicollinearity through VIF. In addition to no collinearity, Logistic Regression also requires that there be no highly influential or high leverage points. Logistic Regression is, however, robust to concerns about heteroskedasticity.
+
+```{r}
+df <- df_hate_train
+
+## Now make predictions on train just for the purposes of checking assumptions
+df$preds <- predict(mod3, newdata = df, type = "response")
+```
+
+Check for highly influential points:
+```{r}
+model.data <- broom::augment(mod3) %>% 
+  mutate(index = 1:n()) 
+
+ggplot(model.data, aes(index, .std.resid, color = as.factor(Anti_semitic_crimes))) + 
+  geom_point(alpha = .5) +
+  labs(x = "Observation",
+       y = "Standardized Deviance",
+       color = "Anti-Semitic Hate Crime") +
+  scale_color_manual(values = c("cadetblue", "gold")) +
+  theme_bw()
+```
+
+The overall pattern looks largely consistent with no high leverage points, but we can count them directly by looking for any observations with excetionally high standardized deviance.
+```{r}
+nrow(model.data %>% 
+  filter(abs(.std.resid) > 3))
+```
+**141 observations violate the standardized deviance > 3**
+
+Check Cook's Distance:
+```{r}
+plot(mod3, which = 4, id.n = 3)
+```
+**But we only see three points that violate Cook's Distance.**
+
+# CONCLUSION
+The model has relatively high accuracy, although the classifiers are performing differently. The severe skew in the % of Anti-Semitic Hate Crime out of total Hate Crimes likely has made it challenging for this particular classification algorithm to positively identify instances of Anti-Semitic Hate Crime (See Confusion Matrix and low specificity and low positive predictive rate). Despite performing two types of encoding -- one-hot on those variables that can have multiple observations, and frequency encoding for all other categorical variables -- there was sufficient noise in the dataset to render the algorithm unable to differentiate optimally. However, this is often the case with logistic regression algorithms, especially when the starting proportions are so skewed. Other classification algorithms that are more robust to this starting skew, such as Random Forest or KNN, might be appropriate next steps for these data.
+
+That said, the goal of models need not be to *only* predict but also to better understand what has happened in the past. From these models, we are able to identify with relative confidence features of interest that are worth monitoring. (See lists above).
+
+Overall, we can have relative confidence in these conclusions because we took great pains to clean the data correctly, to correct for initial overfitting of the model that we observed, by performing appropriate encoding on the categorical variables, and by performing 10-fold cross-validation, which allowed us to ensure that we were not overfitting. We also verified we had no severe collinearity through VIF, that we have very few (only 141/193,330) high influential points, which is unlikely to necessitate removal and model refitting, and we only have three true outliers / high leverage points as identified by Cook's Distance.
+
+
+
+  
