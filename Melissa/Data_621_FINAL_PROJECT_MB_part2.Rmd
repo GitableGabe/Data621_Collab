@@ -513,7 +513,7 @@ summary(logistic_model)
 
 
 ```{r}
-data_test_model$probability_predictions <- predict(logistic_model, newdata = df_test_model, type = "response")
+(probability_predictions <- predict(logistic_model, newdata = df_test_model, type = "response"))
 ```
 
 ```{r}
@@ -521,9 +521,13 @@ data_test_model$probability_predictions <- predict(logistic_model, newdata = df_
 threshold <- 0.5
 
 # Make binary predictions
-binary_predictions <- ifelse(predicted_probabilities >= threshold, 1, 0)
+binary_predictions <- ifelse(probability_predictions  >= threshold, 1, 0)
 
 # Display the binary predictions
 print(binary_predictions)
+```
+
+```{r}
+df_test_model <- cbind(df_test_model, as.data.frame(probability_predictions),as.data.frame(binary_predictions))
 ```
 
