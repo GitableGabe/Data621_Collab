@@ -27,6 +27,7 @@ library(gridExtra)
 library(psych)
 library(skimr)
 library(caret)
+library(pROC)
 ```
 
 
@@ -472,8 +473,6 @@ rm(bc,freq_list)
 # hist(df_hate_test$bias_desc_freq)
 ```
 
-
-
 ```{r}
 df_temp <- df_hate_test
 df_test_model <- cbind(df_temp,
@@ -489,4 +488,57 @@ df_test_model <- cbind(df_temp,
 rm(df_temp)
 ```
 
+```{r, warning=FALSE}
+(cor_matrix_for_model <- cor(df_train_model))
+```
 
+
+```{r}
+cor_threshold <- 0.95
+(highly_correlated_pairs <- which(cor_matrix_for_model > cor_threshold & cor_matrix_for_model < 1, arr.ind = TRUE))
+
+```
+
+
+### Models
+```{r}
+mod <- glm(Antisemitic_crimes~.,df_train_model, family = binomial)
+summary(mod)
+```
+
+```{r}
+logistic_model <- glm(Antisemitic_crimes~ norm_ori_freq + norm_state_abbr_freq + norm_data_year_freq + victim_types_freq + division_name_freq  + region_name_freq + population_group_code_freq + offender_race_freq ,df_train_model, family = binomial)
+
+summary(logistic_model)
+```
+
+
+```{r}
+(probability_predictions <- predict(logistic_model, newdata = df_test_model, type = "response"))
+```
+
+```{r}
+# Set threshold (default is 0.5)
+threshold <- 0.5
+
+# Make binary predictions
+binary_predictions <- ifelse(probability_predictions  >= threshold, 1, 0)
+
+# Display the binary predictions
+print(binary_predictions)
+```
+
+```{r}
+df_test_model <- cbind(df_test_model, as.data.frame(probability_predictions),as.data.frame(binary_predictions))
+```
+
+```{r}
+ls_class <- relevel(factor(df_test_model$Antisemitic_crimes), ref = "1") ## changes it from the default ref of 0
+ls_scr_class <- relevel(factor(df_test_model$binary_predictions), ref = "1")
+confusionMatrix(data=ls_scr_class, reference = ls_class)
+```
+### **ROC Curve & AUC**
+```{r}
+
+roc(as.numeric(ls_class), as.numeric(ls_scr_class), plot = TRUE, print.auc = TRUE)
+```
