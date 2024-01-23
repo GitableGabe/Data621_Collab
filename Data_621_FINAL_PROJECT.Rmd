@@ -296,7 +296,8 @@ bc <- boxcox(freq_list~ 1, lambda = seq(-2,2,0.1))
 lambda_pug_agency_name <- bc$x[which.max(bc$y)]
 
 # Apply the Box-Cox transformation
-norm_pug_agency_name_freq <- (freq_list^lambda_pug_agency_name-1)/lambda_pug_agency_name
+norm_pug_agency_name_freq <- 
+  (freq_list^lambda_pug_agency_name-1)/lambda_pug_agency_name
 
 rm(bc,freq_list)
 # hist(data_year_freq_norm )
@@ -418,7 +419,8 @@ bc <- boxcox(freq_list~ 1, lambda = seq(-2,2,0.1))
 lambda_pug_agency_name <- bc$x[which.max(bc$y)]
 
 # Apply the Box-Cox transformation
-norm_pug_agency_name_freq <- (freq_list^lambda_pug_agency_name-1)/lambda_pug_agency_name
+norm_pug_agency_name_freq <- 
+  (freq_list^lambda_pug_agency_name-1)/lambda_pug_agency_name
 
 rm(bc,freq_list)
 # hist(data_year_freq_norm )
@@ -495,7 +497,9 @@ rm(df_temp)
 
 ```{r}
 cor_threshold <- 0.95
-(highly_correlated_pairs <- which(cor_matrix_for_model > cor_threshold & cor_matrix_for_model < 1, arr.ind = TRUE))
+(highly_correlated_pairs 
+  <- which(cor_matrix_for_model > cor_threshold & cor_matrix_for_model < 1,
+           arr.ind = TRUE))
 
 ```
 
@@ -507,14 +511,19 @@ summary(mod)
 ```
 
 ```{r}
-logistic_model <- glm(Antisemitic_crimes~ norm_ori_freq + norm_state_abbr_freq + norm_data_year_freq + victim_types_freq + division_name_freq  + region_name_freq + population_group_code_freq + offender_race_freq ,df_train_model, family = binomial)
+logistic_model <- glm(Antisemitic_crimes~ norm_ori_freq +
+                        norm_state_abbr_freq + norm_data_year_freq +
+                        victim_types_freq + division_name_freq  +
+                        region_name_freq + population_group_code_freq +
+                        offender_race_freq ,df_train_model, family = binomial)
 
 summary(logistic_model)
 ```
 
 
 ```{r}
-(probability_predictions <- predict(logistic_model, newdata = df_test_model, type = "response"))
+(probability_predictions <- predict(logistic_model, newdata = df_test_model,
+                                    type = "response"))
 ```
 
 ```{r}
@@ -529,16 +538,19 @@ print(binary_predictions)
 ```
 
 ```{r}
-df_test_model <- cbind(df_test_model, as.data.frame(probability_predictions),as.data.frame(binary_predictions))
+df_test_model <- cbind(df_test_model, as.data.frame(probability_predictions),
+                       as.data.frame(binary_predictions))
 ```
 
 ```{r}
-ls_class <- relevel(factor(df_test_model$Antisemitic_crimes), ref = "1") ## changes it from the default ref of 0
+ls_class <- relevel(factor(df_test_model$Antisemitic_crimes),
+                    ref = "1") ## changes it from the default ref of 0
 ls_scr_class <- relevel(factor(df_test_model$binary_predictions), ref = "1")
 confusionMatrix(data=ls_scr_class, reference = ls_class)
 ```
 ### **ROC Curve & AUC**
 ```{r}
 
-roc(as.numeric(ls_class), as.numeric(ls_scr_class), plot = TRUE, print.auc = TRUE)
+roc(as.numeric(ls_class), as.numeric(ls_scr_class), plot = TRUE,
+    print.auc = TRUE)
 ```
